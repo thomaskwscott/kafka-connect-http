@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--~
+  ~ Copyright 2015 Confluent Inc.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.confluent</groupId>
+        <artifactId>common</artifactId>
+        <version>5.1.0-SNAPSHOT</version>
+    </parent>
+
+    <groupId>io.confluent</groupId>
+    <artifactId>kafka-connect-http</artifactId>
+    <packaging>jar</packaging>
+    <name>kafka-connect-http</name>
+    <organization>
+        <name>Confluent, Inc.</name>
+        <url>http://confluent.io</url>
+    </organization>
+    <url>http://confluent.io</url>
+    <description>
+       A Kafka Connect HTTP connector for copying data between Kafka and HTTP APIs (REST).
+    </description>
+
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <properties>
+        <confluent.version>${project.version}</confluent.version>
+        <commons-io.version>2.4</commons-io.version>
+        <licenses.name>Apache License 2.0</licenses.name>
+        <licenses.version>${project.version}</licenses.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.package.home>target/${project.artifactId}-${project.version}-package</project.package.home>
+        <confluent.maven.repo>http://packages.confluent.io/maven/</confluent.maven.repo>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>confluent</id>
+            <name>Confluent</name>
+            <url>${confluent.maven.repo}</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>connect-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-module-junit4</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-api-easymock</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.4.3.v20170317</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>9.4.3.v20170317</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <inherited>true</inherited>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-Xlint:all</arg>
+                        <arg>-Werror</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.confluent</groupId>
+                <version>0.10.0</version>
+                <artifactId>kafka-connect-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>kafka-connect</goal>
+                        </goals>
+                        <configuration>
+                            <title>Kafka Connect HTTP</title>
+                            <documentationUrl>https://docs.confluent.io/current/connect</documentationUrl>
+                            <description>
+                                The HTTP sink connector allows you to export data from Kafka topics to any HTTP API.
+                            </description>
+                            <logo>logos/http.jpg</logo>
+
+                            <supportProviderName>Confluent, Inc.</supportProviderName>
+                            <supportSummary>Confluent does note currently support the HTTP sink connector.</supportSummary>
+                            <supportUrl>https://docs.confluent.io/current/</supportUrl>
+                            <supportLogo>logos/confluent.png</supportLogo>
+
+                            <ownerUsername>confluentinc</ownerUsername>
+                            <ownerType>organization</ownerType>
+                            <ownerName>Confluent, Inc.</ownerName>
+                            <ownerUrl>https://confluent.io/</ownerUrl>
+                            <ownerLogo>logos/confluent.png</ownerLogo>
+
+                            <dockerNamespace>confluentinc</dockerNamespace>
+                            <dockerName>cp-kafka-connect</dockerName>
+                            <dockerTag>${project.version}</dockerTag>
+
+                            <componentTypes>
+                                <componentType>sink</componentType>
+                            </componentTypes>
+
+                            <tags>
+                                <tag>http</tag>
+                                <tag>rest</tag>
+                            </tags>
+
+                            <confluentControlCenterIntegration>false</confluentControlCenterIntegration>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/assembly/development.xml</descriptor>
+                        <descriptor>src/assembly/package.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <suppressionsLocation>checkstyle/suppressions.xml</suppressionsLocation>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>rpm</id>
+            <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>rpm-maven-plugin</artifactId>
+                    <version>2.1.5</version>
+                    <executions>
+                        <execution>
+                            <id>generate-rpm</id>
+                            <goals>
+                                <goal>rpm</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                        <configuration>
+                            <group>Applications/Internet</group>
+                            <packager>Confluent Packaging</packager>
+                            <license>${licenses.name}</license>
+                            <needarch>noarch</needarch>
+                            <targetOS>linux</targetOS>
+                            <requires>
+                                <require>confluent-common = ${project.version}</require>
+                            </requires>
+                            <mappings>
+                                <mapping>
+                                    <directory>/usr/share/java/${project.artifactId}</directory>
+                                    <sources>
+                                        <source>
+                                            <location>${project.package.home}/share/java/${project.artifactId}</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+                                <mapping>
+                                    <configuration>true</configuration>
+                                    <directory>/etc/${project.artifactId}</directory>
+                                    <sources>
+                                        <source>
+                                            <location>${project.package.home}/etc/${project.artifactId}</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+                                <mapping>
+                                    <documentation>true</documentation>
+                                    <directory>/usr/share/doc/${project.artifactId}</directory>
+                                    <sources>
+                                        <source>
+                                            <location>${project.package.home}/share/doc/${project.artifactId}</location>
+                                        </source>
+                                    </sources>
+                                </mapping>
+                            </mappings>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>standalone</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/standalone.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>licenses-package</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>create-licenses</id>
+                                <configuration>
+                                    <mainClass>io.confluent.licenses.LicenseFinder</mainClass>
+                                    <arguments>
+                                        <!-- Note use of development instead of package so we pick up all dependencies. -->
+                                        <argument>-i ${project.build.directory}/${project.build.finalName}-package/share/java/kafka-connect-http</argument>
+                                        <argument>-o ${project.basedir}/licenses</argument>
+                                        <argument>-f</argument>
+                                        <argument>-h ${project.build.directory}/${project.build.finalName}-package/share/doc/kafka-connect-http/licenses.html</argument>
+                                        <argument>-l ${project.build.directory}/${project.build.finalName}-package/share/doc/kafka-connect-http/licenses</argument>
+                                        <argument>-n ${project.build.directory}/${project.build.finalName}-package/share/doc/kafka-connect-htpp/notices</argument>
+                                        <argument>-t ${project.name}</argument>
+                                        <argument>-x licenses-${licenses.version}.jar</argument>
+                                    </arguments>
+                                </configuration>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includeProjectDependencies>true</includeProjectDependencies>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <executableDependency>
+                                <groupId>io.confluent</groupId>
+                                <artifactId>licenses</artifactId>
+                            </executableDependency>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>io.confluent</groupId>
+                                <artifactId>licenses</artifactId>
+                                <version>${licenses.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+	<profile>
+        <id>licenses-source</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>create-licenses</id>
+                                <configuration>
+                                    <mainClass>io.confluent.licenses.LicenseFinder</mainClass>
+                                    <arguments>
+                                        <!-- Note use of development instead of package so we pick up all dependencies. -->
+                                        <argument>-i ${project.build.directory}/${project.build.finalName}-development/share/java/kafka-connect-http</argument>
+                                        <argument>-o ${project.basedir}/licenses</argument>
+                                        <argument>-f</argument>
+                                        <argument>-h ${project.basedir}/licenses.html</argument>
+                                        <argument>-l ${project.basedir}/licenses</argument>
+                                        <argument>-n ${project.basedir}/notices</argument>
+                                        <argument>-t ${project.name}</argument>
+                                        <argument>-x licenses-${licenses.version}.jar</argument>
+                                    </arguments>
+                                </configuration>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includeProjectDependencies>true</includeProjectDependencies>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <executableDependency>
+                                <groupId>io.confluent</groupId>
+                                <artifactId>licenses</artifactId>
+                            </executableDependency>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>io.confluent</groupId>
+                                <artifactId>licenses</artifactId>
+                                <version>${licenses.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>.</directory>
+                                    <includes>
+                                        <include>licenses.html</include>
+                                        <directory>licenses/*.*</directory>
+                                        <directory>notices/*.*</directory>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
