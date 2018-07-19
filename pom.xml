@@ -153,7 +153,7 @@
                             <logo>logos/http.jpg</logo>
 
                             <supportProviderName>Confluent, Inc.</supportProviderName>
-                            <supportSummary>Confluent does note currently support the HTTP sink connector.</supportSummary>
+                            <supportSummary>Confluent does not currently support the HTTP sink connector.</supportSummary>
                             <supportUrl>https://docs.confluent.io/current/</supportUrl>
                             <supportLogo>logos/confluent.png</supportLogo>
 
