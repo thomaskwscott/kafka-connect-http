@@ -1,6 +1,6 @@
 .. _connect_HTTP:
 
-Confluent HTTP Connector
+Kafka Connect HTTP Connector
 ========================
 
 Contents:

@@ -1,4 +1,4 @@
-package io.confluent.connect.http.sink;
+package uk.co.threefi.connect.http.sink;
 
 
 import org.eclipse.jetty.server.Connector;

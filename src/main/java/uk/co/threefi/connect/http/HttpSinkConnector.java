@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.confluent.connect.http;
+package uk.co.threefi.connect.http;
 
 import org.apache.kafka.common.config.Config;
 import org.apache.kafka.common.config.ConfigDef;
@@ -27,9 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import io.confluent.connect.http.sink.HttpSinkConfig;
-import io.confluent.connect.http.sink.HttpSinkTask;
-import io.confluent.connect.http.util.Version;
+import uk.co.threefi.connect.http.sink.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.HttpSinkTask;
+import uk.co.threefi.connect.http.util.Version;
 
 public final class HttpSinkConnector extends SinkConnector {
   private static final Logger log = LoggerFactory.getLogger(HttpSinkConnector.class);

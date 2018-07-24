@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Kafka Connect HTTP'
-copyright = u'2018, Confluent, Inc.'
+copyright = u'2018, 3Fi LTD.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -205,7 +205,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'KafkaConnectHTTP.tex', u'Kafka Connect HTTP Documentation',
-   u'Confluent, Inc.', 'manual'),
+   u'3Fi LTD', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -235,7 +235,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'kafkaconnecthttp', u'Kafka Connect HTTP',
-     [u'Confluent, Inc.'], 1)
+     [u'3Fi LTD'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -249,7 +249,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'KafkaConnectHTTP', u'Kafka Connect HTTP Documentation',
-   u'Confluent, Inc.', 'KafkaConnectHTTP',
+   u'3Fi LTD', 'KafkaConnectHTTP',
    'Kafka Connector for HTTP sources',
    'Miscellaneous'),
 ]

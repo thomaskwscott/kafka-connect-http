@@ -53,7 +53,7 @@ Now we submit the HTTP connector to the cp-demo connect instance:
 
         curl -X POST -H "Content-Type: application/json" --data '{ \
         "name": "http-sink", \
-        "config": {"connector.class":"io.confluent.connect.http.HttpSinkConnector", \
+        "config": {"connector.class":"uk.co.threefi.connect.http.HttpSinkConnector", \
                 "tasks.max":"1", \
                 "http.api.url":"https://restproxy:8086/topics/jsontest.replica", \
                 "topics":"jsontest.source", \
@@ -71,7 +71,7 @@ Now we submit the HTTP connector to the cp-demo connect instance:
 
         { \
         "name":"http-sink", \
-        "config":{"connector.class":"io.confluent.connect.http.HttpSinkConnector", \
+        "config":{"connector.class":"uk.co.threefi.connect.http.HttpSinkConnector", \
                 "tasks.max":"1", \
                 "http.api.url":"https://restproxy:8086/topics/jsontest.replica", \
                 "topics":"jsontest.source", \

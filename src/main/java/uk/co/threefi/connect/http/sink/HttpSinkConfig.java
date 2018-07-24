@@ -1,5 +1,4 @@
 /*
- * Copyright 2016 Confluent Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.confluent.connect.http.sink;
+package uk.co.threefi.connect.http.sink;
 
 import java.util.ArrayList;
 import java.util.HashSet;

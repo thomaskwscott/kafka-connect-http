@@ -20,21 +20,16 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.confluent</groupId>
-        <artifactId>common</artifactId>
-        <version>5.1.0-SNAPSHOT</version>
-    </parent>
-
-    <groupId>io.confluent</groupId>
+    <groupId>uk.co.threefi</groupId>
     <artifactId>kafka-connect-http</artifactId>
+    <version>5.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>kafka-connect-http</name>
     <organization>
-        <name>Confluent, Inc.</name>
-        <url>http://confluent.io</url>
+        <name>3fi</name>
+        <url>http://threefi.co.uk</url>
     </organization>
-    <url>http://confluent.io</url>
+    <url>http://threefi.co.uk</url>
     <description>
        A Kafka Connect HTTP connector for copying data between Kafka and HTTP APIs (REST).
     </description>
@@ -50,11 +45,17 @@
     <properties>
         <confluent.version>${project.version}</confluent.version>
         <commons-io.version>2.4</commons-io.version>
+        <junit.version>4.12</junit.version>
+        <java.version>8</java.version>
+        <maven-compiler-plugin.version>3.6.1</maven-compiler-plugin.version>
+        <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
+        <kafka.version>2.1.0-SNAPSHOT</kafka.version>
         <licenses.name>Apache License 2.0</licenses.name>
         <licenses.version>${project.version}</licenses.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.package.home>target/${project.artifactId}-${project.version}-package</project.package.home>
         <confluent.maven.repo>http://packages.confluent.io/maven/</confluent.maven.repo>
+        <easymock.version>3.6</easymock.version>
     </properties>
 
     <repositories>
@@ -69,27 +70,14 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>
+            <version>${kafka.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.easymock</groupId>
-            <artifactId>easymock</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-junit4</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-easymock</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -99,15 +87,16 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <version>${easymock.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -127,12 +116,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
                 <inherited>true</inherited>
                 <configuration>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
                         <arg>-Werror</arg>
                     </compilerArgs>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -146,26 +138,22 @@
                         </goals>
                         <configuration>
                             <title>Kafka Connect HTTP</title>
-                            <documentationUrl>https://docs.confluent.io/current/connect</documentationUrl>
+                            <documentationUrl>https://github.com/thomaskwscott/kafka-connect-http/wiki</documentationUrl>
                             <description>
                                 The HTTP sink connector allows you to export data from Kafka topics to any HTTP API.
                             </description>
                             <logo>logos/http.jpg</logo>
 
-                            <supportProviderName>Confluent, Inc.</supportProviderName>
-                            <supportSummary>Confluent does not currently support the HTTP sink connector.</supportSummary>
-                            <supportUrl>https://docs.confluent.io/current/</supportUrl>
-                            <supportLogo>logos/confluent.png</supportLogo>
+                            <supportProviderName>Thomas Scott</supportProviderName>
+                            <supportSummary>Support is provided as best effort only. Please register any issues in the github project.</supportSummary>
+                            <supportUrl>https://github.com/thomaskwscott/kafka-connect-http/issues</supportUrl>
+                            <supportLogo>logos/http.png</supportLogo>
 
-                            <ownerUsername>confluentinc</ownerUsername>
-                            <ownerType>organization</ownerType>
-                            <ownerName>Confluent, Inc.</ownerName>
-                            <ownerUrl>https://confluent.io/</ownerUrl>
-                            <ownerLogo>logos/confluent.png</ownerLogo>
-
-                            <dockerNamespace>confluentinc</dockerNamespace>
-                            <dockerName>cp-kafka-connect</dockerName>
-                            <dockerTag>${project.version}</dockerTag>
+                            <ownerUsername>thomaskwscott</ownerUsername>
+                            <ownerType>user</ownerType>
+                            <ownerName>Thomas Scott</ownerName>
+                            <ownerUrl>https://github.com/thomaskwscott</ownerUrl>
+                            <ownerLogo>logos/thomaskwscott.png</ownerLogo>
 
                             <componentTypes>
                                 <componentType>sink</componentType>
@@ -199,9 +187,10 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>validate</id>
@@ -214,7 +203,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
         </plugins>
         <resources>
             <resource>
