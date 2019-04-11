@@ -22,7 +22,7 @@
 
     <groupId>uk.co.threefi</groupId>
     <artifactId>kafka-connect-http</artifactId>
-    <version>1.0.0</version>
+    <version>5.2.0</version>
     <packaging>jar</packaging>
     <name>kafka-connect-http</name>
     <organization>
@@ -43,15 +43,15 @@
     </licenses>
 
     <properties>
-        <confluent.version>5.1.0</confluent.version>
+        <confluent.version>5.2.0</confluent.version>
         <commons-io.version>2.4</commons-io.version>
         <junit.version>4.12</junit.version>
         <java.version>8</java.version>
         <maven-compiler-plugin.version>3.6.1</maven-compiler-plugin.version>
         <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
-        <kafka.version>2.1.0-SNAPSHOT</kafka.version>
+        <kafka.version>2.2.0-SNAPSHOT</kafka.version>
         <licenses.name>Apache License 2.0</licenses.name>
-        <licenses.version>5.1.0</licenses.version>
+        <licenses.version>5.2.0</licenses.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.package.home>target/${project.artifactId}-${project.version}-package</project.package.home>
         <confluent.maven.repo>http://packages.confluent.io/maven/</confluent.maven.repo>

@@ -7,6 +7,7 @@ public class RequestInfo {
     private String body;
     private String method;
     private String url;
+    private long timeStamp;
     private List<String> headers;
 
     public String getBody() {
@@ -39,6 +40,14 @@ public class RequestInfo {
 
     public void setHeaders(List<String> headers) {
         this.headers = headers;
+    }
+
+    public long getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTimeStamp(long timeStamp) {
+        this.timeStamp = timeStamp;
     }
 
 

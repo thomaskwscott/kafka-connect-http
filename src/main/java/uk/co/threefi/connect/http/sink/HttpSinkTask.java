@@ -24,6 +24,7 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -42,7 +43,7 @@ public class HttpSinkTask extends SinkTask {
     remainingRetries = config.maxRetries;
   }
 
-  void initWriter() {
+  protected void initWriter() {
     writer = new HttpApiWriter(config);
   }
 
@@ -70,7 +71,6 @@ public class HttpSinkTask extends SinkTask {
       if (remainingRetries == 0) {
         throw new ConnectException(e);
       } else {
-        writer.closeQuietly();
         initWriter();
         remainingRetries--;
         context.timeout(config.retryBackoffMs);
@@ -82,17 +82,15 @@ public class HttpSinkTask extends SinkTask {
 
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> map) {
-    // Not necessary
+    try {
+      writer.flushBatches();
+    } catch (IOException e) {
+      log.error("Could not flush batches", e);
+    }
   }
 
   public void stop() {
     log.info("Stopping task");
-    try {
-      writer.closeQuietly();
-    } catch (Exception e) {
-      log.error("Couldn't close writer: " + e);
-    }
-
   }
 
   @Override

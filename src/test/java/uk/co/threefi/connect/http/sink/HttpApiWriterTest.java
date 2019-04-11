@@ -45,8 +45,6 @@ public class HttpApiWriterTest {
 
     restHelper.stop();
     restHelper.flushCapturedRequests();
-    if (writer != null)
-      writer.closeQuietly();
   }
 
   @Test
@@ -326,5 +324,254 @@ public class HttpApiWriterTest {
 
 
   }
+
+  @Test
+  public void batchContainsPrefix() throws Exception {
+    Map<String,String> properties = new HashMap<>();
+    int port = restHelper.getPort();
+    String endPoint = "/test";
+    String testUrl = "http://localhost:" + port + endPoint;
+    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+    properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_PREFIX,"batchPrefix");
+
+
+    HttpSinkConfig config = new HttpSinkConfig(properties);
+
+    HttpApiWriter writer = new HttpApiWriter(config);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+    String payload1 = "someValue1";
+    sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
+    writer.write(sinkRecords);
+    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
+
+    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
+    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
+    Assert.assertEquals("/test",request1.getUrl());
+    Assert.assertTrue(request1.getBody().startsWith("batchPrefix"));
+  }
+
+  @Test
+  public void batchContainsSuffix() throws Exception {
+    Map<String,String> properties = new HashMap<>();
+    int port = restHelper.getPort();
+    String endPoint = "/test";
+    String testUrl = "http://localhost:" + port + endPoint;
+    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+    properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_SUFFIX,"batchSuffix");
+
+
+    HttpSinkConfig config = new HttpSinkConfig(properties);
+
+    HttpApiWriter writer = new HttpApiWriter(config);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+    String payload1 = "someValue1";
+    sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
+    writer.write(sinkRecords);
+    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
+
+    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
+    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
+    Assert.assertEquals("/test",request1.getUrl());
+    Assert.assertTrue(request1.getBody().endsWith("batchSuffix"));
+  }
+
+  @Test
+  public void batchSentAtMaxSize() throws Exception {
+    Map<String,String> properties = new HashMap<>();
+    int port = restHelper.getPort();
+    String endPoint = "/test";
+    String testUrl = "http://localhost:" + port + endPoint;
+    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+    properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    properties.put(HttpSinkConfig.BATCH_LINGER_MS,"20000");
+
+
+    HttpSinkConfig config = new HttpSinkConfig(properties);
+
+    HttpApiWriter writer = new HttpApiWriter(config);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+    String payload1 = "someValue1";
+    String payload2 = "someValue2";
+    sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
+    sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload2,0));
+    writer.write(sinkRecords);
+    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
+
+    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
+    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
+    Assert.assertEquals("/test",request1.getUrl());
+    Assert.assertEquals("someKeysomeValue1someTopic,someKeysomeValue2someTopic",request1.getBody());
+  }
+
+  @Test
+  public void batchSentAtLingerMs() throws Exception {
+    Map<String,String> properties = new HashMap<>();
+    int port = restHelper.getPort();
+    String endPoint = "/test";
+    String testUrl = "http://localhost:" + port + endPoint;
+    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+    properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"10");
+    properties.put(HttpSinkConfig.BATCH_LINGER_MS,"3000");
+
+
+
+    HttpSinkConfig config = new HttpSinkConfig(properties);
+
+    HttpApiWriter writer = new HttpApiWriter(config);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+    String payload1 = "someValue1";
+    sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
+    long submitTime = System.currentTimeMillis();
+
+    // write a record, pause for 3 seconds then write another. The batch size is 10 so we will not hit this limit
+    writer.write(sinkRecords);
+    Thread.sleep(3000);
+    writer.write(sinkRecords);
+
+    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
+
+    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
+    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
+    Assert.assertEquals("/test",request1.getUrl());
+    Assert.assertTrue(request1.getTimeStamp() - submitTime > 3000);
+  }
+
+  @Test
+  public void batchesSplitByKeyPattern() throws Exception {
+    Map<String,String> properties = new HashMap<>();
+    int port = restHelper.getPort();
+    String endPoint = "/test";
+    String testUrl = "http://localhost:" + port + endPoint;
+    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+    properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}-${key}");
+
+
+    HttpSinkConfig config = new HttpSinkConfig(properties);
+
+    HttpApiWriter writer = new HttpApiWriter(config);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+    String payload1 = "someValue";
+    sinkRecords.add(new SinkRecord("someTopic1",0,null,"someKey1",null, payload1,0));
+    sinkRecords.add(new SinkRecord("someTopic2",0,null,"someKey2",null, payload1,0));
+
+    writer.write(sinkRecords);
+
+    Assert.assertEquals(2,restHelper.getCapturedRequests().size());
+
+    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
+    RequestInfo request2 = restHelper.getCapturedRequests().get(1);
+
+    Assert.assertEquals("someKey1someValuesomeTopic1",request1.getBody());
+    Assert.assertEquals("someKey2someValuesomeTopic2",request2.getBody());
+  }
+
+  @Test
+  public void batchesSplitByConstantKeyPattern() throws Exception {
+    Map<String,String> properties = new HashMap<>();
+    int port = restHelper.getPort();
+    String endPoint = "/test";
+    String testUrl = "http://localhost:" + port + endPoint;
+    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+    properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    properties.put(HttpSinkConfig.BATCH_LINGER_MS,"20000");
+    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"someKey");
+
+
+    HttpSinkConfig config = new HttpSinkConfig(properties);
+
+    HttpApiWriter writer = new HttpApiWriter(config);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+    String payload1 = "someValue";
+    sinkRecords.add(new SinkRecord("someTopic1",0,null,"someKey1",null, payload1,0));
+    sinkRecords.add(new SinkRecord("someTopic2",0,null,"someKey2",null, payload1,0));
+
+    writer.write(sinkRecords);
+
+    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
+
+    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
+
+    Assert.assertEquals("someKey1someValuesomeTopic1,someKey2someValuesomeTopic2",request1.getBody());
+  }
+
+  @Test
+  public void multipleBatchesSentAtMaxSize() throws Exception {
+    Map<String,String> properties = new HashMap<>();
+    int port = restHelper.getPort();
+    String endPoint = "/test";
+    String testUrl = "http://localhost:" + port + endPoint;
+    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+    properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    properties.put(HttpSinkConfig.BATCH_LINGER_MS,"20000");
+    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+
+
+    HttpSinkConfig config = new HttpSinkConfig(properties);
+
+    HttpApiWriter writer = new HttpApiWriter(config);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+    String payload1 = "someValue";
+
+
+    sinkRecords.add(new SinkRecord("someTopic1",0,null,"someKey1",null, payload1,0));
+    sinkRecords.add(new SinkRecord("someTopic2",0,null,"someKey2",null, payload1,0));
+    sinkRecords.add(new SinkRecord("someTopic1",0,null,"someKey2",null, payload1,0));
+    sinkRecords.add(new SinkRecord("someTopic2",0,null,"someKey1",null, payload1,0));
+
+
+
+    writer.write(sinkRecords);
+
+    Assert.assertEquals(2,restHelper.getCapturedRequests().size());
+
+    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
+    RequestInfo request2 = restHelper.getCapturedRequests().get(1);
+
+    Assert.assertEquals("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1",request1.getBody());
+    Assert.assertEquals("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2",request2.getBody());
+  }
+
 
 }

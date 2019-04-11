@@ -49,12 +49,9 @@ public class HttpSinkTaskTest extends EasyMockSupport {
         ctx.timeout(retryBackoffMs);
         expectLastCall().times(maxRetries);
 
-        mockWriter.closeQuietly();
-        expectLastCall().times(maxRetries);
-
         HttpSinkTask task = new HttpSinkTask() {
             @Override
-            void initWriter() {
+            protected void initWriter() {
                 this.writer = mockWriter;
             }
         };

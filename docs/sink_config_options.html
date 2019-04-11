@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>HTTP Sink Configuration Options &mdash; Kafka Connect HTTP 1.0.0 documentation</title>
+  <title>HTTP Sink Configuration Options &mdash; Kafka Connect HTTP 5.2.0 documentation</title>
   
 
   
@@ -24,27 +24,19 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Kafka Connect HTTP 1.0.0 documentation" href="index.html"/>
-        <link rel="next" title="Changelog" href="changelog.html"/>
-        <link rel="prev" title="HTTP Sink Connector" href="sink_connector.html"/> 
+  <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Changelog" href="changelog.html" />
+    <link rel="prev" title="HTTP Sink Connector" href="sink_connector.html" /> 
 
   
   <script src="static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -66,7 +58,7 @@
             
             
               <div class="version">
-                1.0
+                5.2
               </div>
             
           
@@ -96,6 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#connection">Connection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#regex">Regex</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#retries">Retries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#batching">Batching</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
@@ -110,7 +103,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Kafka Connect HTTP</a>
@@ -118,9 +111,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -149,7 +143,7 @@
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="sources/sink_config_options.txt" rel="nofollow"> View page source</a>
+            <a href="sources/sink_config_options.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -167,14 +161,14 @@
 <div class="section" id="connection">
 <h2>Connection<a class="headerlink" href="#connection" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
-<dt><code class="docutils literal"><span class="pre">http.api.url</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">http.api.url</span></code></dt>
 <dd><p class="first">HTTP API base url.</p>
 <ul class="last simple">
 <li>Type: string</li>
 <li>Importance: high</li>
 </ul>
 </dd>
-<dt><code class="docutils literal"><span class="pre">request.method</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">request.method</span></code></dt>
 <dd><p class="first">Request method used to interactr with the HTTP API (PUT/POST/DELETE).</p>
 <ul class="last simple">
 <li>Type: string</li>
@@ -182,7 +176,7 @@
 <li>Importance: high</li>
 </ul>
 </dd>
-<dt><code class="docutils literal"><span class="pre">headers</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">headers</span></code></dt>
 <dd><p class="first">HTTP Request Headers.</p>
 <ul class="last simple">
 <li>Type: string</li>
@@ -190,7 +184,7 @@
 <li>Importance: low</li>
 </ul>
 </dd>
-<dt><code class="docutils literal"><span class="pre">header.separator</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">header.separator</span></code></dt>
 <dd><p class="first">Seperator used in the headers property.</p>
 <ul class="last simple">
 <li>Type: string</li>
@@ -203,21 +197,21 @@
 <div class="section" id="regex">
 <h2>Regex<a class="headerlink" href="#regex" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
-<dt><code class="docutils literal"><span class="pre">regex.patterns</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">regex.patterns</span></code></dt>
 <dd><p class="first">Character separated list of regex patterns to match in the payload.</p>
 <ul class="last simple">
 <li>Type: string</li>
 <li>Importance: low</li>
 </ul>
 </dd>
-<dt><code class="docutils literal"><span class="pre">regex.replacements</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">regex.replacements</span></code></dt>
 <dd><p class="first">Character separated list of string to use as replacements for the matches to the patterns in regex.patterns.</p>
 <ul class="last simple">
 <li>Type: string</li>
 <li>Importance: low</li>
 </ul>
 </dd>
-<dt><code class="docutils literal"><span class="pre">regex.separator</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">regex.separator</span></code></dt>
 <dd><p class="first">Character separator to use with regex.patterns and regex.replacements.</p>
 <ul class="last simple">
 <li>Type: string</li>
@@ -230,22 +224,75 @@
 <div class="section" id="retries">
 <h2>Retries<a class="headerlink" href="#retries" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
-<dt><code class="docutils literal"><span class="pre">max.retries</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">max.retries</span></code></dt>
 <dd><p class="first">The maximum number of times to retry on errors before failing the task.</p>
 <ul class="last simple">
 <li>Type: int</li>
 <li>Default: 10</li>
-<li>Valid Values: [0,...]</li>
+<li>Valid Values: [0,…]</li>
 <li>Importance: medium</li>
 </ul>
 </dd>
-<dt><code class="docutils literal"><span class="pre">retry.backoff.ms</span></code></dt>
+<dt><code class="docutils literal notranslate"><span class="pre">retry.backoff.ms</span></code></dt>
 <dd><p class="first">The time in milliseconds to wait following an error before a retry attempt is made.</p>
 <ul class="last simple">
 <li>Type: int</li>
 <li>Default: 3000</li>
-<li>Valid Values: [0,...]</li>
+<li>Valid Values: [0,…]</li>
 <li>Importance: medium</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="batching">
+<h2>Batching<a class="headerlink" href="#batching" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">batch.key.pattern</span></code></dt>
+<dd><p class="first">Pattern used to build the key for a given batch. ${key} and ${topic} can be used to include message attributes here.</p>
+<ul class="last simple">
+<li>Type: string</li>
+<li>Default: someKey</li>
+<li>Importance: high</li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">batch.max.size</span></code></dt>
+<dd><p class="first">The number of records accumulated in a batch before the HTTP API will be invoked.</p>
+<ul class="last simple">
+<li>Type: int</li>
+<li>Default: 1</li>
+<li>Valid Values: [0,…]</li>
+<li>Importance: high</li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">batch.prefix</span></code></dt>
+<dd><p class="first">Prefix added to record batches. This will be applied once at the beginning of the batch of records.</p>
+<ul class="last simple">
+<li>Type: string</li>
+<li>Importance: high</li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">batch.suffix</span></code></dt>
+<dd><p class="first">Suffix added to record batches. This will be applied once at the end of the batch of records.</p>
+<ul class="last simple">
+<li>Type: string</li>
+<li>Importance: high</li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">batch.seperator</span></code></dt>
+<dd><p class="first">Seperator for records in a batch.</p>
+<ul class="last simple">
+<li>Type: string</li>
+<li>Default: ,</li>
+<li>Importance: high</li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">batch.linger.ms</span></code></dt>
+<dd><p class="first">Interval to wait to accumulate records in a batch. After this interval has passed the batch will be sent whether full
+or not. Note: this relies on Connect’s flush mechanism so should not be less than offset.flush.interval.ms</p>
+<ul class="last simple">
+<li>Type: int</li>
+<li>Default: 0</li>
+<li>Importance: high</li>
 </ul>
 </dd>
 </dl>
@@ -254,9 +301,7 @@
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -278,7 +323,7 @@
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -296,11 +341,12 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.0.0',
+            VERSION:'5.2.0',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: ''
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="static/jquery.js"></script>
@@ -309,19 +355,13 @@
 
   
 
-  
-  
-    <script type="text/javascript" src="static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

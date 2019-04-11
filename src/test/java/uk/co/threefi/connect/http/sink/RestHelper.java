@@ -108,6 +108,7 @@ public class RestHelper extends HttpServlet {
         requestInfo.setBody(buffer.toString());
         requestInfo.setUrl(request.getRequestURI());
         requestInfo.setMethod(request.getMethod());
+        requestInfo.setTimeStamp(System.currentTimeMillis());
         Enumeration<String> headerNames = request.getHeaderNames();
         List<String> headers = new ArrayList<>();
         while (headerNames.hasMoreElements()) {

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Kafka Connect HTTP Connector &mdash; Kafka Connect HTTP 1.0.0 documentation</title>
+  <title>Kafka Connect HTTP Connector &mdash; Kafka Connect HTTP 5.2.0 documentation</title>
   
 
   
@@ -24,26 +24,18 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Kafka Connect HTTP 1.0.0 documentation" href="#"/>
-        <link rel="next" title="HTTP Sink Connector" href="sink_connector.html"/> 
+  <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="HTTP Sink Connector" href="sink_connector.html" /> 
 
   
   <script src="static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -65,7 +57,7 @@
             
             
               <div class="version">
-                1.0
+                5.2
               </div>
             
           
@@ -104,7 +96,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="#">Kafka Connect HTTP</a>
@@ -112,9 +104,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -143,7 +136,7 @@
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="sources/index.txt" rel="nofollow"> View page source</a>
+            <a href="sources/index.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -162,22 +155,27 @@
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="sink_connector.html">HTTP Sink Connector</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="sink_connector.html#quick-start-poor-mans-s-replicator">Quick Start - Poor mans&#8217;s Replicator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sink_connector.html#quick-start-poor-mans-s-replicator">Quick Start - Poor mans’s Replicator</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sink_connector.html#create-the-source-and-sink-topics">Create the source and sink topics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sink_connector.html#load-the-http-sink-connector">Load the HTTP Sink Connector</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sink_connector.html#confirm-the-results">Confirm the results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sink_connector.html#features">Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sink_connector.html#key-topic-substitutions">Key/Topic substitutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sink_connector.html#regex-replacements">Regex Replacements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sink_connector.html#batching">Batching</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="sink_connector.html#features">Features</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sink_config_options.html">HTTP Sink Configuration Options</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sink_config_options.html#connection">Connection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sink_config_options.html#regex">Regex</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sink_config_options.html#retries">Retries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sink_config_options.html#batching">Batching</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#version-5-2-0">Version 5.2.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#version-1-0-0">Version 1.0.0</a></li>
 </ul>
 </li>
@@ -187,9 +185,7 @@
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -209,7 +205,7 @@
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -227,11 +223,12 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'1.0.0',
+            VERSION:'5.2.0',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: ''
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="static/jquery.js"></script>
@@ -240,19 +237,13 @@
 
   
 
-  
-  
-    <script type="text/javascript" src="static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

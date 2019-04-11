@@ -3,8 +3,6 @@
 HTTP Sink Configuration Options
 -------------------------------
 
-.. include:: includes/db_connection_security.rst
-
 Connection
 ^^^^^^^^^^
 
@@ -36,7 +34,7 @@ Connection
   * Importance: low
 
 Regex
-^^^^^^^^^^
+^^^^^
 
 ``regex.patterns``
   Character separated list of regex patterns to match in the payload.
@@ -75,3 +73,48 @@ Retries
   * Default: 3000
   * Valid Values: [0,...]
   * Importance: medium
+
+Batching
+^^^^^^^^
+
+``batch.key.pattern``
+  Pattern used to build the key for a given batch. ${key} and ${topic} can be used to include message attributes here.
+
+  * Type: string
+  * Default: someKey
+  * Importance: high
+
+``batch.max.size``
+  The number of records accumulated in a batch before the HTTP API will be invoked.
+
+  * Type: int
+  * Default: 1
+  * Valid Values: [0,...]
+  * Importance: high
+
+``batch.prefix``
+  Prefix added to record batches. This will be applied once at the beginning of the batch of records.
+
+  * Type: string
+  * Importance: high
+
+``batch.suffix``
+  Suffix added to record batches. This will be applied once at the end of the batch of records.
+
+  * Type: string
+  * Importance: high
+
+``batch.seperator``
+  Seperator for records in a batch.
+
+  * Type: string
+  * Default: ,
+  * Importance: high
+
+``batch.linger.ms``
+  Interval to wait to accumulate records in a batch. After this interval has passed the batch will be sent whether full
+  or not. Note: this relies on Connect's flush mechanism so should not be less than offset.flush.interval.ms
+
+  * Type: int
+  * Default: 0
+  * Importance: high
