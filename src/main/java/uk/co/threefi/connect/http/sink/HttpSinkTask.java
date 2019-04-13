@@ -82,11 +82,7 @@ public class HttpSinkTask extends SinkTask {
 
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> map) {
-    try {
-      writer.flushBatches();
-    } catch (IOException e) {
-      log.error("Could not flush batches", e);
-    }
+    //ignored
   }
 
   public void stop() {

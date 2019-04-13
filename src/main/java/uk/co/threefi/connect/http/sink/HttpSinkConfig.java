@@ -114,12 +114,6 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String BATCH_SEPARATOR_DOC = "seperator for records in a batch.";
     private static final String BATCH_SEPARATOR_DISPLAY = "Batch seperator";
 
-    public static final String BATCH_LINGER_MS = "batch.linger.ms";
-    private static final Long BATCH_LINGER_MS_DEFAULT = 0l;
-    private static final String BATCH_LINGER_MS_DOC = "interval to wait to accumulate records in a batch. "
-            + "After this interval has passed the batch will be sent whether full or not. "
-            + "Note: this relies on Connect's flush mechanism so should not be less than offset.flush.interval.ms";
-    private static final String BATCH_LINGER_MS_DISPLAY = "Batch linger ms";
 
     public static final String CONNECTION_GROUP = "Connection";
     private static final String RETRIES_GROUP = "Retries";
@@ -289,17 +283,6 @@ public class HttpSinkConfig extends AbstractConfig {
                     4,
                     ConfigDef.Width.SHORT,
                     BATCH_SEPARATOR_DISPLAY
-            )
-            .define(
-                    BATCH_LINGER_MS,
-                    ConfigDef.Type.LONG,
-                    BATCH_LINGER_MS_DEFAULT,
-                    ConfigDef.Importance.HIGH,
-                    BATCH_LINGER_MS_DOC,
-                    BATCHING_GROUP,
-                    5,
-                    ConfigDef.Width.SHORT,
-                    BATCH_LINGER_MS_DISPLAY
             );
 
     public final String httpApiUrl;
@@ -315,7 +298,6 @@ public class HttpSinkConfig extends AbstractConfig {
     public String batchPrefix;
     public String batchSuffix;
     public String batchSeparator;
-    public Long batchLingerMs = BATCH_LINGER_MS_DEFAULT;
     public int batchMaxSize;
 
 
@@ -335,7 +317,6 @@ public class HttpSinkConfig extends AbstractConfig {
         batchPrefix = getString(BATCH_PREFIX);
         batchSuffix = getString(BATCH_SUFFIX);
         batchSeparator = getString(BATCH_SEPARATOR);
-        batchLingerMs = getLong(BATCH_LINGER_MS);
     }
 
 

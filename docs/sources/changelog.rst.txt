@@ -3,6 +3,11 @@
 Changelog
 =========
 
+Version 5.2.1
+-------------
+
+* Removed batch.linger.ms property to prevent potential scenario where messages can have offsets committed without being sent during task failure.
+
 Version 5.2.0
 -------------
 

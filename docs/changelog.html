@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Changelog &mdash; Kafka Connect HTTP 5.2.0 documentation</title>
+  <title>Changelog &mdash; Kafka Connect HTTP 5.2.1 documentation</title>
   
 
   
@@ -85,6 +85,7 @@
 <li class="toctree-l1"><a class="reference internal" href="sink_connector.html">HTTP Sink Connector</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sink_config_options.html">HTTP Sink Configuration Options</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-5-2-1">Version 5.2.1</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-5-2-0">Version 5.2.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-1-0-0">Version 1.0.0</a></li>
 </ul>
@@ -155,6 +156,12 @@
             
   <div class="section" id="changelog">
 <span id="http-connector-changelog"></span><h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-5-2-1">
+<h2>Version 5.2.1<a class="headerlink" href="#version-5-2-1" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Removed batch.linger.ms property to prevent potential scenario where messages can have offsets committed without being sent during task failure.</li>
+</ul>
+</div>
 <div class="section" id="version-5-2-0">
 <h2>Version 5.2.0<a class="headerlink" href="#version-5-2-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -207,7 +214,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'5.2.0',
+            VERSION:'5.2.1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

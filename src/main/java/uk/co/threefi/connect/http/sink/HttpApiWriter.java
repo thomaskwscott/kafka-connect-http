@@ -33,7 +33,6 @@ public class HttpApiWriter {
     private final HttpSinkConfig config;
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
-    private Map<String,Long> lastSentBatches = new HashMap<>();
 
     HttpApiWriter(final HttpSinkConfig config) {
         this.config = config;
@@ -52,29 +51,21 @@ public class HttpApiWriter {
             // add to batch and check for batch size limit
             if (!batches.containsKey(formattedKeyPattern)) {
                 batches.put(formattedKeyPattern, new ArrayList<SinkRecord> (Arrays.asList(new SinkRecord[]{record})));
-                // new batch needs to start linger timer
-                lastSentBatches.put(formattedKeyPattern,System.currentTimeMillis());
             } else {
                 batches.get(formattedKeyPattern).add(record);
             }
             if (batches.get(formattedKeyPattern).size() >= config.batchMaxSize) {
                 sendBatch(formattedKeyPattern);
-                lastSentBatches.put(formattedKeyPattern,System.currentTimeMillis());
             }
-
-            flushBatches();
         }
+        flushBatches();
 
     }
 
     public void flushBatches() throws IOException {
-        // check linger
-        for(Map.Entry<String,Long> entry: lastSentBatches.entrySet()) {
-            if(entry.getValue() <= System.currentTimeMillis() - config.batchLingerMs && batches.get(entry.getKey()) !=null
-                    &&  batches.get(entry.getKey()).size() > 0) {
+        // send any outstanding batches
+        for(Map.Entry<String,List<SinkRecord>> entry: batches.entrySet()) {
                 sendBatch(entry.getKey());
-                lastSentBatches.put(entry.getKey(),System.currentTimeMillis());
-            }
         }
     }
 
@@ -121,7 +112,6 @@ public class HttpApiWriter {
 
         //clear batch
         batches.remove(formattedKeyPattern);
-        lastSentBatches.remove(formattedKeyPattern);
 
         log.debug("Submitted payload: " + builder.toString()
                 + ", url:" + formattedUrl);

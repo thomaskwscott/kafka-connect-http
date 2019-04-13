@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>HTTP Sink Connector &mdash; Kafka Connect HTTP 5.2.0 documentation</title>
+  <title>HTTP Sink Connector &mdash; Kafka Connect HTTP 5.2.1 documentation</title>
   
 
   
@@ -284,10 +284,9 @@ http://localhost:8083/connectors
 </div></blockquote>
 <div class="admonition tip">
 <p class="first admonition-title">Tip</p>
-<p class="last">In this example we have configured <code class="docutils literal notranslate"><span class="pre">batch.max.size</span></code> to 5 and <code class="docutils literal notranslate"><span class="pre">batch.linger.ms</span></code> to 1 minute. This means you
-will need to produce at least 5 messages before the HTTP calls will be invoked. On the 5th message you will see
-all 5 messages submitted to Rest Proxy in one call. Alternatively you can wait 1 minute for the
-<code class="docutils literal notranslate"><span class="pre">batch.linger.ms</span></code> to be applied and will see any produced messages submitted to Rest Proxy after this timeout.</p>
+<p class="last">In this example we have configured <code class="docutils literal notranslate"><span class="pre">batch.max.size</span></code> to 5. This means, if you produce more than 5 messages in
+a way in which connect will see them in a signle fetch (e.g. by producing them before starting the connector.
+You will see batches of 5 messages submitted as single calls to the HTTP API.</p>
 </div>
 </div>
 <div class="section" id="features">
@@ -309,8 +308,8 @@ before being submitted to the destination API. For more information see the conf
 <p>The HTTP Sink connector batches up requests submitted to HTTP APIs for efficiency. Batches can be built with custom
 separators, prefixes and suffixes. For more information see the configuration options <code class="docutils literal notranslate"><span class="pre">batch.prefix</span></code>, <code class="docutils literal notranslate"><span class="pre">batch.suffix</span></code>
 and <code class="docutils literal notranslate"><span class="pre">batch.separator</span></code>.</p>
-<p>You can also control when batches are submitted with configuration for maximum size of a batch and maximum interval
-before a batch is sent.  For more information see the configuration options <code class="docutils literal notranslate"><span class="pre">batch.max.size</span></code> and <code class="docutils literal notranslate"><span class="pre">batch.linger.ms</span></code></p>
+<p>You can also control when batches are submitted with configuration for maximum size of a batch. For more information
+see the configuration option <code class="docutils literal notranslate"><span class="pre">batch.max.size</span></code></p>
 <p>All regex options mentioned above still apply when batching and will be applied to individual messages before being
 submitted to the batch.</p>
 </div>
@@ -359,7 +358,7 @@ submitted to the batch.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'5.2.0',
+            VERSION:'5.2.1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

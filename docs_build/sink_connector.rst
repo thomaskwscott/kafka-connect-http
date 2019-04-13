@@ -122,10 +122,9 @@ In your earlier opened console consumer you should see the following:
         {"foo4":"bar4"}
         {"foo5":"bar5"}
 
-.. tip:: In this example we have configured ``batch.max.size`` to 5 and ``batch.linger.ms`` to 1 minute. This means you
-        will need to produce at least 5 messages before the HTTP calls will be invoked. On the 5th message you will see
-        all 5 messages submitted to Rest Proxy in one call. Alternatively you can wait 1 minute for the
-        ``batch.linger.ms`` to be applied and will see any produced messages submitted to Rest Proxy after this timeout.
+.. tip:: In this example we have configured ``batch.max.size`` to 5. This means, if you produce more than 5 messages in
+        a way in which connect will see them in a signle fetch (e.g. by producing them before starting the connector.
+        You will see batches of 5 messages submitted as single calls to the HTTP API.
 
 --------
 Features
@@ -154,8 +153,8 @@ The HTTP Sink connector batches up requests submitted to HTTP APIs for efficienc
 separators, prefixes and suffixes. For more information see the configuration options ``batch.prefix``, ``batch.suffix``
 and ``batch.separator``.
 
-You can also control when batches are submitted with configuration for maximum size of a batch and maximum interval
-before a batch is sent.  For more information see the configuration options ``batch.max.size`` and ``batch.linger.ms``
+You can also control when batches are submitted with configuration for maximum size of a batch. For more information
+see the configuration option ``batch.max.size``
 
 All regex options mentioned above still apply when batching and will be applied to individual messages before being
 submitted to the batch.
