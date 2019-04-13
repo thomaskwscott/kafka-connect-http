@@ -56,7 +56,7 @@ public class HttpSinkTask extends SinkTask {
     final int recordsCount = records.size();
     log.trace(
         "Received {} records. First record kafka coordinates:({}-{}-{}). Writing them to the "
-        + "database...",
+        + "API...",
         recordsCount, first.topic(), first.kafkaPartition(), first.kafkaOffset()
     );
     try {
