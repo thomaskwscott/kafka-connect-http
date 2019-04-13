@@ -68,7 +68,6 @@ Now we submit the HTTP connector to the cp-demo connect instance:
                 "batch.prefix":"{\"records\":[", \
                 "batch.suffix":"]}", \
                 "batch.max.size":"5", \
-                "batch.linger.ms":"60000", \
                 "regex.patterns":"^~$", \
                 "regex.replacements":"{\"value\":~}", \
                 "regex.separator":"~" }}' \
@@ -91,7 +90,6 @@ Now we submit the HTTP connector to the cp-demo connect instance:
                 "batch.prefix":"{\"records\":[", \
                 "batch.suffix":"]}", \
                 "batch.max.size":"5", \
-                "batch.linger.ms":"60000", \
                 "regex.patterns":"^~$", \
                 "regex.replacements":"{\"value\":~}", \
                 "regex.separator":"~", \
