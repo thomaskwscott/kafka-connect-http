@@ -1,18 +1,18 @@
 package uk.co.threefi.connect.http.sink;
 
 import io.jsonwebtoken.Jwts;
-import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
 
 public class PayloadGenerator {
-    private final KeyPair keyPair;
+    private final PrivateKey privateKey;
     private final String issuer;
     private final String subject;
     private final String audience;
 
-    public PayloadGenerator(KeyPair keyPair, String issuer, String subject, String audience) {
-        this.keyPair = keyPair;
+    public PayloadGenerator(PrivateKey privateKey, String issuer, String subject, String audience) {
+        this.privateKey = privateKey;
         this.issuer = issuer;
         this.subject = subject;
         this.audience = audience;
@@ -24,7 +24,7 @@ public class PayloadGenerator {
                 .setIssuer(issuer)
                 .setSubject(subject)
                 .setAudience(audience)
-                .signWith(keyPair.getPrivate())
+                .signWith(privateKey)
                 .compact();
     }
 }

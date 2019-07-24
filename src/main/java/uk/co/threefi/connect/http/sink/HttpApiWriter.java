@@ -15,20 +15,24 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.*;
 
 
 public class HttpApiWriter {
@@ -37,9 +41,34 @@ public class HttpApiWriter {
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
 
-    HttpApiWriter(final HttpSinkConfig config) {
+    HttpApiWriter(final HttpSinkConfig config) throws Exception {
         this.config = config;
-        client = new JavaNetHttpClient();
+
+        PayloadGenerator payloadGenerator = new PayloadGenerator(
+                extractPrivateKeyFromConfig(config),
+                config.salesforceAuthenticationClientId,
+                config.salesforceAuthenticationUsername,
+                config.salesforceAuthenticationRoot);
+
+        SalesforceAuthenticationProvider authenticationProvider =
+                new SalesforceAuthenticationProvider(
+                        config.salesforceAuthenticationRoot,
+                        new JavaNetHttpClient(),
+                        Clock.systemDefaultZone(),
+                        payloadGenerator);
+        client = new AuthenticatedJavaNetHttpClient(authenticationProvider);
+    }
+
+    private PrivateKey extractPrivateKeyFromConfig(HttpSinkConfig config)
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
+        byte[] keyBytes = Base64.getDecoder()
+                .decode(config.salesforceAuthenticationPrivateKey
+                        .replaceAll("-----BEGIN PRIVATE KEY-----", "")
+                        .replaceAll("-----END PRIVATE KEY-----", "")
+                        .replaceAll("\\s+", "")
+                        .getBytes());
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+        return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
     public void write(final Collection<SinkRecord> records) throws IOException {
@@ -53,7 +82,7 @@ public class HttpApiWriter {
 
             // add to batch and check for batch size limit
             if (!batches.containsKey(formattedKeyPattern)) {
-                batches.put(formattedKeyPattern, new ArrayList<SinkRecord> (Arrays.asList(new SinkRecord[]{record})));
+                batches.put(formattedKeyPattern, new ArrayList<SinkRecord>(Arrays.asList(new SinkRecord[]{record})));
             } else {
                 batches.get(formattedKeyPattern).add(record);
             }
@@ -67,8 +96,8 @@ public class HttpApiWriter {
 
     public void flushBatches() throws IOException {
         // send any outstanding batches
-        for(Map.Entry<String,List<SinkRecord>> entry: batches.entrySet()) {
-                sendBatch(entry.getKey());
+        for (Map.Entry<String, List<SinkRecord>> entry : batches.entrySet()) {
+            sendBatch(entry.getKey());
         }
     }
 

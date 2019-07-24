@@ -114,11 +114,31 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String BATCH_SEPARATOR_DOC = "seperator for records in a batch.";
     private static final String BATCH_SEPARATOR_DISPLAY = "Batch seperator";
 
-
     public static final String CONNECTION_GROUP = "Connection";
     private static final String RETRIES_GROUP = "Retries";
     private static final String REGEX_GROUP = "Regex";
     private static final String BATCHING_GROUP = "Batching";
+    private static final String SALESFORCE_AUTH_GROUP = "Salesforce Auth";
+
+    public static final String SALESFORCE_AUTHENTICATION_ROOT = "salesforce.authentication.root";
+    private static final String SALESFORCE_AUTHENTICATION_ROOT_DEFAULT = "https://test.salesforce.com";
+    private static final String SALESFORCE_AUTHENTICATION_ROOT_DOC = "The Root URL for the Salesforce Authentication server, without a trailing slash.";
+    private static final String SALESFORCE_AUTHENTICATION_ROOT_DISPLAY = "Salesforce Authentication Server Root URL path";
+
+    public static final String SALESFORCE_AUTHENTICATION_CLIENT_ID = "salesforce.authentication.client_id";
+    private static final String SALESFORCE_AUTHENTICATION_CLIENT_ID_DEFAULT = "";
+    private static final String SALESFORCE_AUTHENTICATION_CLIENT_ID_DOC = "OAuth client_id for the connected app for which the certificate was registered";
+    private static final String SALESFORCE_AUTHENTICATION_CLIENT_ID_DISPLAY = "Salesforce Authentication client_id";
+
+    public static final String SALESFORCE_AUTHENTICATION_USERNAME = "salesforce.authentication.username";
+    private static final String SALESFORCE_AUTHENTICATION_USERNAME_DEFAULT = "";
+    private static final String SALESFORCE_AUTHENTICATION_USERNAME_DOC = "The username of the Salesforce user.";
+    private static final String SALESFORCE_AUTHENTICATION_USERNAME_DISPLAY = "Salesforce Authentication username";
+
+    public static final String SALESFORCE_AUTHENTICATION_PRIVATE_KEY = "salesforce.authentication.private_key";
+    private static final String SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DEFAULT = "";
+    private static final String SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DOC = "The private key used to sign the login request.";
+    private static final String SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DISPLAY = "Salesforce Authentication Private Key";
 
     private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 
@@ -283,6 +303,50 @@ public class HttpSinkConfig extends AbstractConfig {
                     4,
                     ConfigDef.Width.SHORT,
                     BATCH_SEPARATOR_DISPLAY
+            )
+            .define(
+                    SALESFORCE_AUTHENTICATION_ROOT,
+                    ConfigDef.Type.STRING,
+                    SALESFORCE_AUTHENTICATION_ROOT_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    SALESFORCE_AUTHENTICATION_ROOT_DOC,
+                    SALESFORCE_AUTH_GROUP,
+                    1,
+                    ConfigDef.Width.MEDIUM,
+                    SALESFORCE_AUTHENTICATION_ROOT_DISPLAY
+            )
+            .define(
+                    SALESFORCE_AUTHENTICATION_CLIENT_ID,
+                    ConfigDef.Type.STRING,
+                    SALESFORCE_AUTHENTICATION_CLIENT_ID_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    SALESFORCE_AUTHENTICATION_CLIENT_ID_DOC,
+                    SALESFORCE_AUTH_GROUP,
+                    2,
+                    ConfigDef.Width.MEDIUM,
+                    SALESFORCE_AUTHENTICATION_CLIENT_ID_DISPLAY
+            )
+            .define(
+                    SALESFORCE_AUTHENTICATION_USERNAME,
+                    ConfigDef.Type.STRING,
+                    SALESFORCE_AUTHENTICATION_USERNAME_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    SALESFORCE_AUTHENTICATION_USERNAME_DOC,
+                    SALESFORCE_AUTH_GROUP,
+                    3,
+                    ConfigDef.Width.MEDIUM,
+                    SALESFORCE_AUTHENTICATION_USERNAME_DISPLAY
+            )
+            .define(
+                    SALESFORCE_AUTHENTICATION_PRIVATE_KEY,
+                    ConfigDef.Type.STRING,
+                    SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DOC,
+                    SALESFORCE_AUTH_GROUP,
+                    4,
+                    ConfigDef.Width.MEDIUM,
+                    SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DISPLAY
             );
 
     public final String httpApiUrl;
@@ -299,7 +363,10 @@ public class HttpSinkConfig extends AbstractConfig {
     public String batchSuffix;
     public String batchSeparator;
     public int batchMaxSize;
-
+    public final String salesforceAuthenticationRoot;
+    public final String salesforceAuthenticationClientId;
+    public final String salesforceAuthenticationUsername;
+    public final String salesforceAuthenticationPrivateKey;
 
     public HttpSinkConfig(Map<?, ?> props) {
         super(CONFIG_DEF, props);
@@ -317,6 +384,10 @@ public class HttpSinkConfig extends AbstractConfig {
         batchPrefix = getString(BATCH_PREFIX);
         batchSuffix = getString(BATCH_SUFFIX);
         batchSeparator = getString(BATCH_SEPARATOR);
+        salesforceAuthenticationRoot = getString(SALESFORCE_AUTHENTICATION_ROOT);
+        salesforceAuthenticationClientId = getString(SALESFORCE_AUTHENTICATION_CLIENT_ID);
+        salesforceAuthenticationUsername = getString(SALESFORCE_AUTHENTICATION_USERNAME);
+        salesforceAuthenticationPrivateKey = getString(SALESFORCE_AUTHENTICATION_PRIVATE_KEY);
     }
 
 

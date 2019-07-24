@@ -39,11 +39,15 @@ public class HttpSinkTask extends SinkTask {
   public void start(final Map<String, String> props) {
     log.info("Starting task");
     config = new HttpSinkConfig(props);
-    initWriter();
+    try {
+      initWriter();
+    } catch (Exception e) {
+      throw new ConnectException(e);
+    }
     remainingRetries = config.maxRetries;
   }
 
-  protected void initWriter() {
+  protected void initWriter() throws Exception {
     writer = new HttpApiWriter(config);
   }
 
@@ -71,7 +75,11 @@ public class HttpSinkTask extends SinkTask {
       if (remainingRetries == 0) {
         throw new ConnectException(e);
       } else {
-        initWriter();
+        try {
+          initWriter();
+        } catch (Exception ex) {
+          throw new ConnectException(e);
+        }
         remainingRetries--;
         context.timeout(config.retryBackoffMs);
         throw new RetriableException(e);

@@ -33,7 +33,7 @@ public class PayloadGeneratorTest {
 
     @Before
     public void setUp() {
-        payloadGenerator = new PayloadGenerator(pair, ISSUER, SUBJECT, AUDIENCE);
+        payloadGenerator = new PayloadGenerator(pair.getPrivate(), ISSUER, SUBJECT, AUDIENCE);
     }
 
     @Test
