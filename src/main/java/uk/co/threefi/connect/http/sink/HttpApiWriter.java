@@ -15,6 +15,9 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,14 +32,14 @@ import java.util.*;
 
 
 public class HttpApiWriter {
-
+    private final JavaNetHttpClient client;
     private final HttpSinkConfig config;
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
 
     HttpApiWriter(final HttpSinkConfig config) {
         this.config = config;
-
+        client = new JavaNetHttpClient();
     }
 
     public void write(final Collection<SinkRecord> records) throws IOException {
@@ -81,71 +84,31 @@ public class HttpApiWriter {
                 .replace("${key}", record0.key() == null ? "" : record0.key().toString())
                 .replace("${topic}", record0.topic());
         HttpSinkConfig.RequestMethod requestMethod = config.requestMethod;
-        URL url = new URL(formattedUrl);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setDoOutput(true);
-        con.setRequestMethod(requestMethod.toString());
-
 
         // add headers
-        for (String headerKeyValue : config.headers.split(config.headerSeparator)) {
-            if (headerKeyValue.contains(":")) {
-                con.setRequestProperty(headerKeyValue.split(":")[0], headerKeyValue.split(":")[1]);
-            }
-        }
+        Map<String, String> headers = Arrays.stream(config.headers.split(config.headerSeparator))
+                .filter((s) -> s.contains(":"))
+                .map((s) -> s.split(":"))
+                .collect(Collectors.toMap((s) -> s[0], (s) -> s[1]));
 
-        StringBuilder builder = new StringBuilder(config.batchPrefix);
-        int batchIndex=0;
-        for(SinkRecord record : records) {
-            String recordValue = buildRecord(record);
-            builder.append(recordValue);
-            batchIndex++;
-            if (batchIndex < records.size()) {
-                builder.append(config.batchSeparator);
-            }
-        }
-        builder.append(config.batchSuffix);
+        String body = records.stream()
+                .map(this::buildRecord)
+                .collect(Collectors.joining(config.batchSeparator, config.batchPrefix,
+                        config.batchSuffix));
 
-        OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream(), "UTF-8");
-        writer.write(builder.toString());
-        writer.close();
+        log.debug("Submitting payload: {} to url: {}", body, formattedUrl);
+        Response response = client.makeRequest(requestMethod.toString(), formattedUrl, headers, body);
 
         //clear batch
         batches.remove(formattedKeyPattern);
 
-        log.debug("Submitted payload: " + builder.toString()
-                + ", url:" + formattedUrl);
-
-        // get response
-        int status = con.getResponseCode();
-        if (status != 200) {
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getErrorStream()));
-            String inputLine;
-            StringBuffer error = new StringBuffer();
-            while ((inputLine = in.readLine()) != null) {
-                error.append(inputLine);
-            }
-            in.close();
-            throw new IOException("HTTP Response code: " + status
-                    + ", " + con.getResponseMessage() + ", " + error
-                    + ", Submitted payload: " + builder.toString()
-                    + ", url:" + formattedUrl);
+        // handle failed response
+        if (response.getStatusCode() != 200) {
+            throw new IOException(String.format(
+                    "HTTP Response code: %s %s %s, Submitted payload: %s, url: %s",
+                    response.getStatusCode(), response.getStatusMessage(), response.getBody(),
+                    body, formattedUrl));
         }
-        log.debug(", response code: " + status
-                + ", " + con.getResponseMessage()
-                + ", headers: " + config.headers);
-
-        // write the response to the log
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer content = new StringBuffer();
-        while ((inputLine = in.readLine()) != null) {
-            content.append(inputLine);
-        }
-        in.close();
-        con.disconnect();
     }
 
     private String buildRecord(SinkRecord record) {

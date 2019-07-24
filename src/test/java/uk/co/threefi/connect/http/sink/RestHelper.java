@@ -19,6 +19,7 @@ import java.util.List;
 
 public class RestHelper extends HttpServlet {
 
+    private static final long serialVersionUID = -1593053008063189085L;
     private Server server;
     private static int port;
     private static List<RequestInfo> capturedRequests = new ArrayList<RequestInfo>();
