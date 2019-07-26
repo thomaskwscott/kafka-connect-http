@@ -185,21 +185,21 @@
                             <title>Kafka Connect HTTP</title>
                             <documentationUrl>https://thomaskwscott.github.io/kafka-connect-http/</documentationUrl>
                             <description>
-                                The HTTP sink connector allows you to export data from Kafka topics to any HTTP API.
+                                A fork of the HTTP sink connector that allows you to export data from Kafka topics to the Salesforce HTTP API.
                             </description>
                             <logo>logos/http.jpg</logo>
 
-                            <supportProviderName>Thomas Scott</supportProviderName>
-                            <supportSummary>Support is provided as best effort only. Please register any issues in the github project.</supportSummary>
-                            <supportUrl>https://github.com/thomaskwscott/kafka-connect-http/issues</supportUrl>
+                            <supportProviderName>Nutmeg</supportProviderName>
+                            <supportSummary>Internal</supportSummary>
+                            <supportUrl>https://github.com/nutmegdevelopment/kafka-connect-http/issues</supportUrl>
                             <supportLogo>logos/thomaskwscott.png</supportLogo>
 
-                            <sourceUrl>https://github.com/thomaskwscott/kafka-connect-http</sourceUrl>
+                            <sourceUrl>https://github.com/nutmegdevelopment/kafka-connect-http</sourceUrl>
 
-                            <ownerUsername>thomaskwscott</ownerUsername>
+                            <ownerUsername>nutmegdevelopment</ownerUsername>
                             <ownerType>user</ownerType>
-                            <ownerName>Thomas Scott</ownerName>
-                            <ownerUrl>https://github.com/thomaskwscott</ownerUrl>
+                            <ownerName>Nutmeg Development</ownerName>
+                            <ownerUrl>https://github.com/nutmegdevelopment</ownerUrl>
                             <ownerLogo>logos/thomaskwscott.png</ownerLogo>
 
                             <componentTypes>
