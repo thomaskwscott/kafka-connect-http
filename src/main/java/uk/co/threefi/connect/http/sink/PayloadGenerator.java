@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.util.Date;
 
 public class PayloadGenerator {
+    private static final String URL_ENCODED_GRANT_TYPE =
+            "urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer";
     private final PrivateKey privateKey;
     private final String issuer;
     private final String subject;
@@ -19,6 +21,11 @@ public class PayloadGenerator {
     }
 
     public String generate(Instant requestedExpiry) {
+        return String.format("grant_type=%s&assertion=%s", URL_ENCODED_GRANT_TYPE,
+                buildAssertion(requestedExpiry));
+    }
+
+    private String buildAssertion(Instant requestedExpiry) {
         return Jwts.builder()
                 .setExpiration(Date.from(requestedExpiry))
                 .setIssuer(issuer)

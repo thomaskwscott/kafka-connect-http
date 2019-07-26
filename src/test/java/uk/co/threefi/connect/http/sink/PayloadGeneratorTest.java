@@ -9,11 +9,14 @@ import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static uk.co.threefi.connect.http.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PayloadGeneratorTest {
     private static final Instant NOW =
@@ -21,6 +24,8 @@ public class PayloadGeneratorTest {
     private static final String AUDIENCE = "https://test.salesforce.com";
     private static final String ISSUER = "Issuer";
     private static final String SUBJECT = "Subject";
+    private static final Pattern TOKEN_REQUEST_PATTERN =
+            Pattern.compile("^grant_type=(.*)&assertion=(.*)$");
 
     private static KeyPair pair;
 
@@ -40,9 +45,15 @@ public class PayloadGeneratorTest {
     public void generatesPayloadUsingSuppliedKeysAndCredentials() {
         String payload = payloadGenerator.generate(NOW);
 
+        Matcher matcher = TOKEN_REQUEST_PATTERN.matcher(payload);
+        assertThat(matcher.matches()).isTrue();
+
+        assertThat(matcher.group(1))
+                .isEqualTo("urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer");
+
         Claims claims = Jwts.parser()
                 .setSigningKey(pair.getPublic())
-                .parseClaimsJws(payload)
+                .parseClaimsJws(matcher.group(2))
                 .getBody();
         assertThat(claims)
                 .hasExpiration(Date.from(NOW))

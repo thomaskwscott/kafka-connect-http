@@ -15,6 +15,10 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import java.util.Base64;
+import java.util.regex.Pattern;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.After;
 import org.junit.Assert;
@@ -26,14 +30,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static uk.co.threefi.connect.http.Assertions.assertThat;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 
 
 public class HttpApiWriterTest {
-
+  private static final String PRIVATE_KEY = Base64.getEncoder()
+          .encodeToString(Keys.keyPairFor(SignatureAlgorithm.RS256).getPrivate().getEncoded());
+  private static final String SALESFORCE_LOGIN_URL = "/services/oauth2/token";
   private final RestHelper restHelper = new RestHelper();
-
-  private HttpApiWriter writer = null;
+  private static final Pattern TOKEN_REQUEST_PATTERN =
+          Pattern.compile("^grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=.*$");
 
   @Before
   public void setUp() throws Exception {
@@ -56,6 +64,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.PUT.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -63,14 +73,22 @@ public class HttpApiWriterTest {
     String payload = "someValue";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
-    for( RequestInfo requestInfo : restHelper.getCapturedRequests())
-    {
-      Assert.assertEquals(HttpSinkConfig.RequestMethod.PUT.toString(),requestInfo.getMethod());
-      Assert.assertEquals(endPoint,requestInfo.getUrl());
-      Assert.assertEquals(payload,requestInfo.getBody());
-      Assert.assertThat(requestInfo.getHeaders(),hasItems("Content-Type:application/json"));
-    }
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.PUT.toString())
+            .hasUrl(endPoint)
+            .hasBody(payload)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -82,6 +100,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -89,14 +109,22 @@ public class HttpApiWriterTest {
     String payload = "someValue";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
-    for( RequestInfo requestInfo : restHelper.getCapturedRequests())
-    {
-      Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),requestInfo.getMethod());
-      Assert.assertEquals(endPoint,requestInfo.getUrl());
-      Assert.assertEquals(payload,requestInfo.getBody());
-      Assert.assertThat(requestInfo.getHeaders(),hasItems("Content-Type:application/json"));
-    }
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody(payload)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -108,6 +136,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.DELETE.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -115,14 +145,22 @@ public class HttpApiWriterTest {
     String payload = "someValue";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
-    for( RequestInfo requestInfo : restHelper.getCapturedRequests())
-    {
-      Assert.assertEquals(HttpSinkConfig.RequestMethod.DELETE.toString(),requestInfo.getMethod());
-      Assert.assertEquals(endPoint,requestInfo.getUrl());
-      Assert.assertEquals(payload,requestInfo.getBody());
-      Assert.assertThat(requestInfo.getHeaders(),hasItems("Content-Type:application/json"));
-    }
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.DELETE.toString())
+            .hasUrl(endPoint)
+            .hasBody(payload)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -134,6 +172,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.DELETE.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json|Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -141,12 +181,23 @@ public class HttpApiWriterTest {
     String payload = "someValue";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
-    for( RequestInfo requestInfo : restHelper.getCapturedRequests())
-    {
-      Assert.assertThat(requestInfo.getHeaders(),hasItems("Content-Type:application/json"));
-      Assert.assertThat(requestInfo.getHeaders(),hasItems("Cache-Control:no-cache"));
-    }
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.DELETE.toString())
+            .hasUrl(endPoint)
+            .hasBody(payload)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Cache-Control:no-cache");
   }
 
   @Test
@@ -159,6 +210,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.DELETE.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
     properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -166,12 +219,23 @@ public class HttpApiWriterTest {
     String payload = "someValue";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
-    for( RequestInfo requestInfo : restHelper.getCapturedRequests())
-    {
-      Assert.assertThat(requestInfo.getHeaders(),hasItems("Content-Type:application/json"));
-      Assert.assertThat(requestInfo.getHeaders(),hasItems("Cache-Control:no-cache"));
-    }
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.DELETE.toString())
+            .hasUrl(endPoint)
+            .hasBody(payload)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Cache-Control:no-cache");
   }
 
   @Test
@@ -184,6 +248,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
     properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -191,13 +257,23 @@ public class HttpApiWriterTest {
     String payload = "someValue";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
-    for( RequestInfo requestInfo : restHelper.getCapturedRequests())
-    {
-      Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),requestInfo.getMethod());
-      Assert.assertEquals("/someTopic",requestInfo.getUrl());
-      Assert.assertEquals(payload,requestInfo.getBody());
-    }
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl("/someTopic")
+            .hasBody(payload)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Cache-Control:no-cache");
   }
 
   @Test
@@ -210,6 +286,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
     properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -217,13 +295,22 @@ public class HttpApiWriterTest {
     String payload = "someValue";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
-    for( RequestInfo requestInfo : restHelper.getCapturedRequests())
-    {
-      Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),requestInfo.getMethod());
-      Assert.assertEquals("/someKey",requestInfo.getUrl());
-      Assert.assertEquals(payload,requestInfo.getBody());
-    }
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl("/someKey")
+            .hasBody(payload)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -236,6 +323,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REQUEST_METHOD,HttpSinkConfig.RequestMethod.POST.toString());
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
     properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
     HttpSinkConfig config = new HttpSinkConfig(properties);
 
     HttpApiWriter writer = new HttpApiWriter(config);
@@ -245,18 +334,30 @@ public class HttpApiWriterTest {
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload2,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(2,restHelper.getCapturedRequests().size());
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
-    Assert.assertEquals("/test",request1.getUrl());
-    Assert.assertEquals(payload1,request1.getBody());
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(3);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
 
-    RequestInfo request2 = restHelper.getCapturedRequests().get(1);
-    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request2.getMethod());
-    Assert.assertEquals("/test",request2.getUrl());
-    Assert.assertEquals(payload2,request2.getBody());
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody(payload1)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
 
+    assertThat(capturedRequests.get(2))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody(payload2)
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -272,6 +373,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
     properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"start~end");
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -281,15 +384,22 @@ public class HttpApiWriterTest {
     String payload1 = "someValue1";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
-    Assert.assertEquals("/test",request1.getUrl());
-    Assert.assertEquals("start" + payload1 + "end",request1.getBody());
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
 
-
-
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("start" + payload1 + "end")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -305,6 +415,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
     properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -314,15 +426,22 @@ public class HttpApiWriterTest {
     String payload1 = "someValue1";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
-    Assert.assertEquals("/test",request1.getUrl());
-    Assert.assertEquals("someKey" + payload1 + "someTopic",request1.getBody());
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
 
-
-
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKey" + payload1 + "someTopic")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -339,6 +458,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_PREFIX,"batchPrefix");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -348,12 +469,22 @@ public class HttpApiWriterTest {
     String payload1 = "someValue1";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
-    Assert.assertEquals("/test",request1.getUrl());
-    Assert.assertTrue(request1.getBody().startsWith("batchPrefix"));
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("batchPrefixsomeKeysomeValue1someTopic")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -370,6 +501,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_SUFFIX,"batchSuffix");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -379,12 +512,22 @@ public class HttpApiWriterTest {
     String payload1 = "someValue1";
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
-    Assert.assertEquals("/test",request1.getUrl());
-    Assert.assertTrue(request1.getBody().endsWith("batchSuffix"));
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKeysomeValue1someTopicbatchSuffix")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -401,6 +544,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -412,12 +557,22 @@ public class HttpApiWriterTest {
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload1,0));
     sinkRecords.add(new SinkRecord("someTopic",0,null,"someKey",null, payload2,0));
     writer.write(sinkRecords);
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    Assert.assertEquals(HttpSinkConfig.RequestMethod.POST.toString(),request1.getMethod());
-    Assert.assertEquals("/test",request1.getUrl());
-    Assert.assertEquals("someKeysomeValue1someTopic,someKeysomeValue2someTopic",request1.getBody());
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKeysomeValue1someTopic,someKeysomeValue2someTopic")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
 
@@ -435,6 +590,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}-${key}");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -447,13 +604,29 @@ public class HttpApiWriterTest {
 
     writer.write(sinkRecords);
 
-    Assert.assertEquals(2,restHelper.getCapturedRequests().size());
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(3);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    RequestInfo request2 = restHelper.getCapturedRequests().get(1);
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKey1someValuesomeTopic1")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
 
-    Assert.assertEquals("someKey1someValuesomeTopic1",request1.getBody());
-    Assert.assertEquals("someKey2someValuesomeTopic2",request2.getBody());
+    assertThat(capturedRequests.get(2))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKey2someValuesomeTopic2")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -471,6 +644,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
     properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"someKey");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -483,11 +658,21 @@ public class HttpApiWriterTest {
 
     writer.write(sinkRecords);
 
-    Assert.assertEquals(1,restHelper.getCapturedRequests().size());
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(2);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-
-    Assert.assertEquals("someKey1someValuesomeTopic1,someKey2someValuesomeTopic2",request1.getBody());
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic2")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -505,6 +690,8 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
     properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT, String.format("http://localhost:%s", restHelper.getPort()));
 
 
     HttpSinkConfig config = new HttpSinkConfig(properties);
@@ -523,13 +710,30 @@ public class HttpApiWriterTest {
 
     writer.write(sinkRecords);
 
-    Assert.assertEquals(2,restHelper.getCapturedRequests().size());
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    assertThat(capturedRequests).hasSize(3);
+    assertThat(capturedRequests.get(0))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(SALESFORCE_LOGIN_URL)
+            .hasHeaders("Content-Type:application/x-www-form-urlencoded");
+    assertThat(capturedRequests.get(0).getBody()).matches(TOKEN_REQUEST_PATTERN);
 
-    RequestInfo request1 = restHelper.getCapturedRequests().get(0);
-    RequestInfo request2 = restHelper.getCapturedRequests().get(1);
-
-    Assert.assertEquals("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1",request1.getBody());
-    Assert.assertEquals("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2",request2.getBody());
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Cache-Control:no-cache");
+    assertThat(capturedRequests.get(2))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Cache-Control:no-cache");
   }
 
 
