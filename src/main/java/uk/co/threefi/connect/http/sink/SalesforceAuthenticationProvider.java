@@ -47,6 +47,10 @@ public class SalesforceAuthenticationProvider implements AuthenticationProvider 
                 String.format("%s/services/oauth2/token", salesforceAuthRootUrl),
                 ImmutableMap.of("Content-Type", "application/x-www-form-urlencoded"),
                 payloadGenerator.generate(requestedExpiry));
+        if (response.getStatusCode() != 200) {
+            throw new IOException(String.format("Request to %s/services/oauth2/token returned %s.",
+                    salesforceAuthRootUrl, response));
+        }
         JsonObject jsonBody = new JsonParser().parse(response.getBody()).getAsJsonObject();
         return new BearerToken(jsonBody.get("access_token").getAsString(),
                 requestedExpiry.minusSeconds(5));

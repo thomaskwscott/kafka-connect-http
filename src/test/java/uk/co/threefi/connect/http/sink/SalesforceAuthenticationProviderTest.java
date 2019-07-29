@@ -33,6 +33,10 @@ public class SalesforceAuthenticationProviderTest {
                     "https://nutmeg.salesforce.com\",\"id\":\"" +
                     "https://nutmeg.salesforce.com" +
                     "/id/00Dxx0000001gPLEAY/005xx000001SwiUAAS\",\"token_type\":\"Bearer\"}";
+    private static final String ERROR_RESPONSE = "{\n" +
+            "  \"error\": \"invalid_grant\",\n" +
+            "  \"error_description\": \"expired authorization code\"\n" +
+            "}";
     private static final String SALESFORCE_AUTH_ROOT_URL = "http://example.org/login";
     private static final String SALESFORCE_AUTH_FULL_URL =
             SALESFORCE_AUTH_ROOT_URL + "/services/oauth2/token";
@@ -87,11 +91,14 @@ public class SalesforceAuthenticationProviderTest {
     }
 
     @Test
-    public void whenTokenRetrievalFailsPassOnTheException() throws Exception {
+    public void whenTokenRetrievalFailsThrowAnException() throws Exception {
+        Response errorResponse = new Response(400, "Bad Request", ERROR_RESPONSE);
         when(httpClient.makeRequest(POST_METHOD, SALESFORCE_AUTH_FULL_URL, AUTH_HEADERS, JWT_PAYLOAD))
-                .thenThrow(IOException.class);
+                .thenReturn(errorResponse);
 
-        assertThatExceptionOfType(IOException.class).isThrownBy(() -> provider.getBearerToken());
+        assertThatExceptionOfType(IOException.class)
+                .isThrownBy(() -> provider.getBearerToken())
+                .withMessage("Request to %s returned %s.", SALESFORCE_AUTH_FULL_URL, errorResponse);
         verify(httpClient, times(1))
                 .makeRequest(POST_METHOD, SALESFORCE_AUTH_FULL_URL, AUTH_HEADERS, JWT_PAYLOAD);
         assertThat(provider.token).isNull();

@@ -18,7 +18,7 @@ public class JavaNetHttpClient {
                                 final String url,
                                 final Map<String, String> headers,
                                 final String payload) throws IOException {
-        log.debug("{} {}", requestMethod, url);
+        log.info("{} {}", requestMethod, url);
         HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
         con.setDoOutput(true);
         con.setRequestMethod(requestMethod);
@@ -30,7 +30,7 @@ public class JavaNetHttpClient {
         writer.close();
 
         int status = con.getResponseCode();
-        log.debug("{} {} => {} {}", requestMethod, url, status, con.getResponseMessage());
+        log.info("{} {} => {} {}", requestMethod, url, status, con.getResponseMessage());
         if (status != 200) {
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(con.getErrorStream()));
