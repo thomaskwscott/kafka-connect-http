@@ -21,10 +21,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>uk.co.threefi</groupId>
-    <artifactId>kafka-connect-http</artifactId>
-    <version>5.2.1</version>
+    <artifactId>kafka-connect-http-with-auth</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>kafka-connect-http</name>
+    <name>kafka-connect-http-with-auth</name>
     <organization>
         <name>3fi</name>
         <url>http://threefi.co.uk</url>
