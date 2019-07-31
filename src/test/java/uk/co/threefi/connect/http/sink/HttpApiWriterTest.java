@@ -88,7 +88,7 @@ public class HttpApiWriterTest {
             .hasBody(payload)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -124,7 +124,7 @@ public class HttpApiWriterTest {
             .hasBody(payload)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -160,7 +160,7 @@ public class HttpApiWriterTest {
             .hasBody(payload)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -196,7 +196,7 @@ public class HttpApiWriterTest {
             .hasBody(payload)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Authorization:Bearer aaa.bbb.ccc",
                     "Cache-Control:no-cache");
   }
 
@@ -234,7 +234,7 @@ public class HttpApiWriterTest {
             .hasBody(payload)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Authorization:Bearer aaa.bbb.ccc",
                     "Cache-Control:no-cache");
   }
 
@@ -272,7 +272,7 @@ public class HttpApiWriterTest {
             .hasBody(payload)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Authorization:Bearer aaa.bbb.ccc",
                     "Cache-Control:no-cache");
   }
 
@@ -310,7 +310,7 @@ public class HttpApiWriterTest {
             .hasBody(payload)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -349,7 +349,7 @@ public class HttpApiWriterTest {
             .hasBody(payload1)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
 
     assertThat(capturedRequests.get(2))
             .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
@@ -357,7 +357,7 @@ public class HttpApiWriterTest {
             .hasBody(payload2)
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -399,7 +399,7 @@ public class HttpApiWriterTest {
             .hasBody("start" + payload1 + "end")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -441,7 +441,7 @@ public class HttpApiWriterTest {
             .hasBody("someKey" + payload1 + "someTopic")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -484,7 +484,7 @@ public class HttpApiWriterTest {
             .hasBody("batchPrefixsomeKeysomeValue1someTopic")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -527,7 +527,7 @@ public class HttpApiWriterTest {
             .hasBody("someKeysomeValue1someTopicbatchSuffix")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -572,7 +572,7 @@ public class HttpApiWriterTest {
             .hasBody("someKeysomeValue1someTopic,someKeysomeValue2someTopic")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
 
@@ -618,7 +618,7 @@ public class HttpApiWriterTest {
             .hasBody("someKey1someValuesomeTopic1")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
 
     assertThat(capturedRequests.get(2))
             .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
@@ -626,7 +626,7 @@ public class HttpApiWriterTest {
             .hasBody("someKey2someValuesomeTopic2")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -672,7 +672,7 @@ public class HttpApiWriterTest {
             .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic2")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc");
+                    "Authorization:Bearer aaa.bbb.ccc");
   }
 
   @Test
@@ -724,7 +724,7 @@ public class HttpApiWriterTest {
             .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Authorization:Bearer aaa.bbb.ccc",
                     "Cache-Control:no-cache");
     assertThat(capturedRequests.get(2))
             .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
@@ -732,7 +732,7 @@ public class HttpApiWriterTest {
             .hasBody("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2")
             .hasHeaders(
                     "Content-Type:application/json",
-                    "Authentication:Bearer aaa.bbb.ccc",
+                    "Authorization:Bearer aaa.bbb.ccc",
                     "Cache-Control:no-cache");
   }
 

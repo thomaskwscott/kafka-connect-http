@@ -1,6 +1,7 @@
 package uk.co.threefi.connect.http.sink;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -33,7 +34,7 @@ public class PayloadGeneratorTest {
 
     @BeforeClass
     public static void generateKeyPair() {
-        pair = Keys.keyPairFor(SignatureAlgorithm.RS256);
+        pair = Keys.keyPairFor(SignatureAlgorithm.RS512 );
     }
 
     @Before
@@ -51,9 +52,13 @@ public class PayloadGeneratorTest {
         assertThat(matcher.group(1))
                 .isEqualTo("urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer");
 
-        Claims claims = Jwts.parser()
+        Jws<Claims> jws = Jwts.parser()
                 .setSigningKey(pair.getPublic())
-                .parseClaimsJws(matcher.group(2))
+                .parseClaimsJws(matcher.group(2));
+
+        assertThat(jws.getHeader().getAlgorithm()).isEqualTo(SignatureAlgorithm.RS256.getValue());
+
+        Claims claims = jws
                 .getBody();
         assertThat(claims)
                 .hasExpiration(Date.from(NOW))

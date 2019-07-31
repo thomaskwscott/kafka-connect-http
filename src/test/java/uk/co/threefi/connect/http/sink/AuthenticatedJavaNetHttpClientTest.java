@@ -59,7 +59,7 @@ public class AuthenticatedJavaNetHttpClientTest {
                 .hasHeaders(
                         "Accept:application/json",
                         "Content-Type:application/json",
-                        "Authentication:Bearer aaaa.bbbb.cccc"
+                        "Authorization:Bearer aaaa.bbbb.cccc"
                 )
                 .hasBody(PAYLOAD);
     }

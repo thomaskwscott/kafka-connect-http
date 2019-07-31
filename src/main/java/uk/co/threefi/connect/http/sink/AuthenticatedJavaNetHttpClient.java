@@ -15,7 +15,7 @@ public class AuthenticatedJavaNetHttpClient extends JavaNetHttpClient {
                                 final String url,
                                 final Map<String, String> headers,
                                 final String payload) throws IOException {
-        headers.put("Authentication", authenticationProvider.getBearerToken());
+        headers.put("Authorization", authenticationProvider.getBearerToken());
         return super.makeRequest(requestMethod, url, headers, payload);
     }
 }

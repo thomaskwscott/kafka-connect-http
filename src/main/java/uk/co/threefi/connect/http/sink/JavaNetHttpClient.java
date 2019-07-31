@@ -19,6 +19,8 @@ public class JavaNetHttpClient {
                                 final Map<String, String> headers,
                                 final String payload) throws IOException {
         log.info("{} {}", requestMethod, url);
+        log.info("Headers {}", headers);
+        log.info("Payload {}", payload);
         HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
         con.setDoOutput(true);
         con.setRequestMethod(requestMethod);

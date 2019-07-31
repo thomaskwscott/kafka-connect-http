@@ -1,6 +1,7 @@
 package uk.co.threefi.connect.http.sink;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
@@ -31,7 +32,7 @@ public class PayloadGenerator {
                 .setIssuer(issuer)
                 .setSubject(subject)
                 .setAudience(audience)
-                .signWith(privateKey)
+                .signWith(privateKey, SignatureAlgorithm.RS256)
                 .compact();
     }
 }

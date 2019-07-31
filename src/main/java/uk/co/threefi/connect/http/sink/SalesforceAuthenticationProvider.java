@@ -7,8 +7,12 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SalesforceAuthenticationProvider implements AuthenticationProvider {
+    private static final Logger log =
+            LoggerFactory.getLogger(SalesforceAuthenticationProvider.class);
     private final String salesforceAuthRootUrl;
     private final JavaNetHttpClient httpClient;
     private final Clock clock;
@@ -51,6 +55,7 @@ public class SalesforceAuthenticationProvider implements AuthenticationProvider 
             throw new IOException(String.format("Request to %s/services/oauth2/token returned %s.",
                     salesforceAuthRootUrl, response));
         }
+        log.info("Successful login with response {}.", response);
         JsonObject jsonBody = new JsonParser().parse(response.getBody()).getAsJsonObject();
         return new BearerToken(jsonBody.get("access_token").getAsString(),
                 requestedExpiry.minusSeconds(5));
