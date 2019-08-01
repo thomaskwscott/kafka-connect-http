@@ -17,23 +17,19 @@ package uk.co.threefi.connect.http.sink;
 
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import java.util.Base64;
-import java.util.regex.Pattern;
-import org.apache.kafka.connect.sink.SinkRecord;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import org.apache.kafka.connect.sink.SinkRecord;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static uk.co.threefi.connect.http.Assertions.assertThat;
-import static org.hamcrest.core.IsCollectionContaining.hasItems;
-
+import static uk.co.threefi.connect.http.sink.RequestInfoAssert.assertThat;
 
 public class HttpApiWriterTest {
   private static final String PRIVATE_KEY = Base64.getEncoder()

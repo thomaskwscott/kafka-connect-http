@@ -1,8 +1,7 @@
 pipeline {
     agent {
-        label 'k8s'
         docker {
-            image 'maven:3.6.1-jdk-8-slim'
+            image 'registry.nutmeg.co.uk:8443/docker-jenkins-agents/jdk11:latest'
         }
     }
     stages {
@@ -22,6 +21,7 @@ pipeline {
                 }
             }
         }
+
         stage('Publish') {
             when {
                 branch 'master'
@@ -40,6 +40,6 @@ pipeline {
                     )
                 }
             }
-        }prob
+        }
     }
 }

@@ -156,6 +156,15 @@
         </dependency>
     </dependencies>
 
+    <distributionManagement>
+        <repository>
+            <uniqueVersion>true</uniqueVersion>
+            <id>libs-release-local</id>
+            <name>libs-release-local</name>
+            <url>https://artifactory.dev.nutmeg.co.uk/artifactory/libs-release-local</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -248,7 +257,6 @@
                 <configuration>
                     <classes>
                         <class>uk.co.threefi.connect.http.sink.BearerToken</class>
-                        <class>uk.co.threefi.connect.http.sink.RequestInfo</class>
                         <class>io.jsonwebtoken.Claims</class>
                     </classes>
                     <entryPointClassPackage>uk.co.threefi.connect.http</entryPointClassPackage>
