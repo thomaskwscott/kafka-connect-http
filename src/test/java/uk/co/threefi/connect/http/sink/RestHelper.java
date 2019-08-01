@@ -19,6 +19,7 @@ import java.util.List;
 
 public class RestHelper extends HttpServlet {
 
+    private static final long serialVersionUID = -1593053008063189085L;
     private Server server;
     private static int port;
     private static List<RequestInfo> capturedRequests = new ArrayList<RequestInfo>();
@@ -34,6 +35,7 @@ public class RestHelper extends HttpServlet {
         handler.addServlet(testServ,"/test");
         handler.addServlet(testServ,"/someTopic");
         handler.addServlet(testServ,"/someKey");
+        handler.addServlet(testServ, "/services/oauth2/token");
 
 
 
@@ -63,7 +65,7 @@ public class RestHelper extends HttpServlet {
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\"}");
+        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -72,7 +74,7 @@ public class RestHelper extends HttpServlet {
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\"}");
+        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
     }
 
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -81,7 +83,7 @@ public class RestHelper extends HttpServlet {
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\"}");
+        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
     }
 
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -90,7 +92,7 @@ public class RestHelper extends HttpServlet {
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\"}");
+        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
     }
 
     private RequestInfo getRequestInfo(HttpServletRequest request) throws IOException {
