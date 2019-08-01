@@ -132,7 +132,7 @@ public class HttpApiWriter {
         batches.remove(formattedKeyPattern);
 
         // handle failed response
-        if (response.getStatusCode() != 200) {
+        if (!Arrays.asList(200, 201, 202, 204).contains(response.getStatusCode())) {
             throw new IOException(String.format(
                     "HTTP Response code: %s %s %s, Submitted payload: %s, url: %s",
                     response.getStatusCode(), response.getStatusMessage(), response.getBody(),
