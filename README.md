@@ -4,7 +4,7 @@
 kafka-connect-http is a [Kafka Connector](http://kafka.apache.org/documentation.html#connect)
 for invoking HTTP APIs with data from Kafka.
 
-Documentation for this connector is todo
+See the [documentation](https://thomaskwscott.github.io/kafka-connect-http/) for how to use this connector.
 
 # Development
 
