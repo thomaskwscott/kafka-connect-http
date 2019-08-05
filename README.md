@@ -8,7 +8,7 @@ Documentation for this connector is todo
 
 # Development
 
-You can build kafka-connect-http with Maven using the standard lifecycle phases.
+You can build kafka-connect-http with Maven using the standard lifecycle phases.  To build the connector run `mvn package`, which will create a jar file in the `target` directory that you can use with Kafka Connect.
 
 # FAQ
 
