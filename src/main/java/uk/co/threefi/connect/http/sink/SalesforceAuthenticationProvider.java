@@ -39,6 +39,12 @@ public class SalesforceAuthenticationProvider implements AuthenticationProvider 
         return String.format("Bearer %s", token.getToken());
     }
 
+    @Override
+    public String obtainNewBearerToken() throws IOException {
+        token = null;
+        return getBearerToken();
+    }
+
     private boolean tokenIsValid() {
         return token != null && token.isValid(clock);
     }

@@ -36,7 +36,7 @@ public class RestHelper extends HttpServlet {
         handler.addServlet(testServ,"/someTopic");
         handler.addServlet(testServ,"/someKey");
         handler.addServlet(testServ, "/services/oauth2/token");
-
+        handler.addServlet(testServ,"/unauthorized");
 
 
         server.setHandler(handler);
@@ -60,39 +60,32 @@ public class RestHelper extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response)
             throws ServletException, IOException {
-
-        capturedRequests.add(getRequestInfo(request));
-
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
+        handle(request, response);
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
-        capturedRequests.add(getRequestInfo(request));
-
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
+        handle(request, response);
     }
 
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
-        capturedRequests.add(getRequestInfo(request));
-
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
+        handle(request, response);
     }
 
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        handle(request, response);
+    }
 
+    private void handle(HttpServletRequest request, HttpServletResponse response) throws IOException {
         capturedRequests.add(getRequestInfo(request));
 
         response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
+        if (request.getServletPath().equals("/unauthorized")) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().println("{ \"status\": \"unauthorized\"}");
+        } else {
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().println("{ \"status\": \"ok\", \"access_token\":\"aaa.bbb.ccc\"}");
+        }
     }
 
     private RequestInfo getRequestInfo(HttpServletRequest request) throws IOException {
