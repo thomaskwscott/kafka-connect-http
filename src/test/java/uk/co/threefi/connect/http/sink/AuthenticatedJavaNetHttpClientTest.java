@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import static uk.co.threefi.connect.http.sink.RequestInfoAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.when;
@@ -76,5 +77,38 @@ public class AuthenticatedJavaNetHttpClientTest {
                                 "Accept", "application/json",
                                 "Content-Type", "application/json"
                         )), PAYLOAD));
+    }
+
+    @Test
+    public void whenAnAuthenticationErrorOccursReacquireTheBearerTokenAndRetryOnce() throws Exception {
+        when(authenticationProvider.getBearerToken()).thenReturn("Bearer aaaa.bbbb.cccc");
+        when(authenticationProvider.obtainNewBearerToken()).thenReturn("Bearer dddd.eeee.ffff");
+
+        client = new AuthenticatedJavaNetHttpClient(authenticationProvider);
+        client.makeRequest(
+                POST, String.format("http://localhost:%s/unauthorized", restHelper.getPort()),
+                Maps.newHashMap(ImmutableMap.of(
+                        "Accept", "application/json",
+                        "Content-Type", "application/json"
+                )), PAYLOAD);
+        assertThat(restHelper.getCapturedRequests()).hasSize(2);
+        assertThat(restHelper.getCapturedRequests().get(0))
+                .hasMethod(POST)
+                .hasUrl("/unauthorized")
+                .hasHeaders(
+                        "Accept:application/json",
+                        "Content-Type:application/json",
+                        "Authorization:Bearer aaaa.bbbb.cccc"
+                )
+                .hasBody(PAYLOAD);
+        assertThat(restHelper.getCapturedRequests().get(1))
+                .hasMethod(POST)
+                .hasUrl("/unauthorized")
+                .hasHeaders(
+                        "Accept:application/json",
+                        "Content-Type:application/json",
+                        "Authorization:Bearer dddd.eeee.ffff"
+                )
+                .hasBody(PAYLOAD);
     }
 }

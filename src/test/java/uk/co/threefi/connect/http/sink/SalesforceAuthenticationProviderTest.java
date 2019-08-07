@@ -6,7 +6,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import org.assertj.core.util.Strings;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,14 +24,22 @@ import static uk.co.threefi.connect.http.Assertions.assertThat;
 public class SalesforceAuthenticationProviderTest {
     private static final String EXPECTED_TOKEN = "00Dxx0000001gPL!AR8AQJXg5oj8jXSgxJfA0lBo" +
             "g.39AsX.LVpxezPwuX5VAIrrbbHMuol7GQxnMeYMN7cj8EoWr78nt1u44zU31IbYNNJguseu";
+    private static final String NEW_TOKEN = "AAAA.BBBB.CCCC";
     private static final String EXPECTED_BEARER_TOKEN = String.format("Bearer %s", EXPECTED_TOKEN);
+    private static final String NEW_BEARER_TOKEN = String.format("Bearer %s", NEW_TOKEN);
     private static final String VALID_TOKEN_RESPONSE =
             "{\"access_token\":\"00Dxx0000001gPL!AR8AQJXg5oj8jXSgxJfA0lBog." +
-                    "39AsX.LVpxezPwuX5VAIrrbbHMuol7GQxnMeYMN7cj8EoWr78nt1u44zU31" +
-                    "IbYNNJguseu\",\"scope\":\"web openid api id\",\"instance_url\":\"" +
-                    "https://nutmeg.salesforce.com\",\"id\":\"" +
-                    "https://nutmeg.salesforce.com" +
-                    "/id/00Dxx0000001gPLEAY/005xx000001SwiUAAS\",\"token_type\":\"Bearer\"}";
+                    "39AsX.LVpxezPwuX5VAIrrbbHMuol7GQxnMeYMN7cj8EoWr78nt1u44zU31IbYNNJguseu\"," +
+                    "\"scope\":\"web openid api id\"," +
+                    "\"instance_url\":\"https://nutmeg.salesforce.com\"," +
+                    "\"id\":\"https://nutmeg.salesforce.com/id/00Dxx0000001gPLEAY/005xx000001SwiUAAS\"," +
+                    "\"token_type\":\"Bearer\"}";
+    private static final String NEW_TOKEN_RESPONSE =
+            "{\"access_token\":\"AAAA.BBBB.CCCC\"," +
+                    "\"scope\":\"web openid api id\"," +
+                    "\"instance_url\":\"https://nutmeg.salesforce.com\"," +
+                    "\"id\":\"https://nutmeg.salesforce.com/id/00Dxx0000001gPLEAY/005xx000001SwiUAAS\"," +
+                    "\"token_type\":\"Bearer\"}";
     private static final String ERROR_RESPONSE = "{\n" +
             "  \"error\": \"invalid_grant\",\n" +
             "  \"error_description\": \"expired authorization code\"\n" +
@@ -112,6 +119,20 @@ public class SalesforceAuthenticationProviderTest {
         verifyZeroInteractions(httpClient);
         assertThat(provider.token)
                 .hasToken(EXPECTED_TOKEN)
+                .hasExpiry(CLOCK_INSTANT.plusSeconds(175));
+    }
+
+    @Test
+    public void whenTokenIsStoredAndValidAndANewTokenIsRequestedObtainAndReturnIt() throws Exception {
+        when(httpClient.makeRequest(POST_METHOD, SALESFORCE_AUTH_FULL_URL, AUTH_HEADERS, JWT_PAYLOAD))
+                .thenReturn(new Response(200, "OK", NEW_TOKEN_RESPONSE));
+        provider.token = new BearerToken(EXPECTED_TOKEN, CLOCK_INSTANT.plusSeconds(175));
+
+        assertThat(provider.obtainNewBearerToken()).isEqualTo(NEW_BEARER_TOKEN);
+        verify(httpClient, times(1))
+                .makeRequest(POST_METHOD, SALESFORCE_AUTH_FULL_URL, AUTH_HEADERS, JWT_PAYLOAD);
+        assertThat(provider.token)
+                .hasToken(NEW_TOKEN)
                 .hasExpiry(CLOCK_INSTANT.plusSeconds(175));
     }
 }

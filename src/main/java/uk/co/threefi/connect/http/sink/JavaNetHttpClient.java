@@ -7,7 +7,9 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +35,7 @@ public class JavaNetHttpClient {
 
         int status = con.getResponseCode();
         log.info("{} {} => {} {}", requestMethod, url, status, con.getResponseMessage());
-        if (status != 200) {
+        if (!Arrays.asList(200, 201, 202, 204).contains(status)) {
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(con.getErrorStream()));
             String inputLine;
