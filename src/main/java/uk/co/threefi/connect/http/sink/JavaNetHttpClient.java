@@ -7,11 +7,11 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.threefi.connect.http.util.HttpUtil;
 
 public class JavaNetHttpClient {
     private static final Logger log = LoggerFactory.getLogger(JavaNetHttpClient.class);
@@ -35,7 +35,8 @@ public class JavaNetHttpClient {
 
         int status = con.getResponseCode();
         log.info("{} {} => {} {}", requestMethod, url, status, con.getResponseMessage());
-        if (!Arrays.asList(200, 201, 202, 204).contains(status)) {
+
+        if (!HttpUtil.isResponseSuccessful(status)) {
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(con.getErrorStream()));
             String inputLine;
