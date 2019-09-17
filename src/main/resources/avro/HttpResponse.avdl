@@ -1,0 +1,9 @@
+@namespace("uk.co.threefi.connect.http")
+protocol NoProtocol {
+  record HttpResponse {
+    int statusCode;
+    string sourceUrl;
+    string statusMessage;
+    string messageBody;
+  }
+}
