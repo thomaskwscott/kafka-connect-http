@@ -15,6 +15,9 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import java.util.concurrent.ExecutionException;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -35,7 +38,7 @@ import static org.junit.Assert.fail;
 public class HttpSinkTaskTest extends EasyMockSupport {
 
     @Test
-    public void retries() throws IOException {
+    public void retries() throws IOException, ExecutionException, InterruptedException {
         final int maxRetries = 2;
         final int retryBackoffMs = 1000;
 
@@ -57,11 +60,18 @@ public class HttpSinkTaskTest extends EasyMockSupport {
         };
         task.initialize(ctx);
 
-        Map<String, String> props = new HashMap<>();
-        props.put(HttpSinkConfig.HTTP_API_URL, "stub");
-        props.put(HttpSinkConfig.MAX_RETRIES, String.valueOf(maxRetries));
-        props.put(HttpSinkConfig.RETRY_BACKOFF_MS, String.valueOf(retryBackoffMs));
-        task.start(props);
+        Map<String, String> properties = new HashMap<>();
+        properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
+        properties.put(HttpSinkConfig.MAX_RETRIES, String.valueOf(maxRetries));
+        properties.put(HttpSinkConfig.RETRY_BACKOFF_MS, String.valueOf(retryBackoffMs));
+        properties.put(ProducerConfig.RETRIES_CONFIG, "1");
+        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://localhost:9092");
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+              "org.apache.kafka.common.serialization.StringSerializer");
+        properties
+              .put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class.getName());
+        properties.put("schema.registry.url","http://localhost:8081");
+        task.start(properties);
 
         replayAll();
 
