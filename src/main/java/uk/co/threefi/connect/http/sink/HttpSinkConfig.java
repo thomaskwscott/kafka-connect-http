@@ -24,6 +24,8 @@ import java.util.Set;
 
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigDef.Importance;
+import org.apache.kafka.common.config.ConfigDef.Width;
 import org.apache.kafka.common.config.ConfigException;
 
 public class HttpSinkConfig extends AbstractConfig {
@@ -140,6 +142,11 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DOC = "The private key used to sign the login request.";
     private static final String SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DISPLAY = "Salesforce Authentication Private Key";
 
+    public static final String RESPONSE_TOPIC = "response.topic";
+    private static final String RESPONSE_TOPIC_DEFAULT = "";
+    private static final String RESPONSE_TOPIC_DOC = "The response topic to use should the response be successful";
+    private static final String RESPONSE_TOPIC_DISPLAY = "Response Topic";
+
     private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 
 
@@ -215,6 +222,17 @@ public class HttpSinkConfig extends AbstractConfig {
                     4,
                     ConfigDef.Width.SHORT,
                     HEADER_SEPERATOR_DISPLAY
+            )
+            .define(
+                  RESPONSE_TOPIC,
+                    ConfigDef.Type.STRING,
+                  RESPONSE_TOPIC_DEFAULT,
+                    Importance.LOW,
+                  RESPONSE_TOPIC_DOC,
+                    CONNECTION_GROUP,
+                   5,
+                    Width.LONG,
+                  RESPONSE_TOPIC_DISPLAY
             )
             .define(
                     REGEX_PATTERNS,
@@ -355,6 +373,7 @@ public class HttpSinkConfig extends AbstractConfig {
     public final int retryBackoffMs;
     public String headers;
     public String headerSeparator;
+    public String responseTopic;
     public String regexPatterns;
     public String regexReplacements;
     public String regexSeparator;
@@ -376,6 +395,7 @@ public class HttpSinkConfig extends AbstractConfig {
         requestMethod = RequestMethod.valueOf(getString(REQUEST_METHOD).toUpperCase());
         headers = getString(HEADERS);
         headerSeparator = getString(HEADER_SEPERATOR);
+        responseTopic = getString(RESPONSE_TOPIC);
         regexPatterns = getString(REGEX_PATTERNS);
         regexReplacements = getString(REGEX_REPLACEMENTS);
         regexSeparator = getString(REGEX_SEPARATOR);

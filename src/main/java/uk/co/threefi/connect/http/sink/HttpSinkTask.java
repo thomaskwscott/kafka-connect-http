@@ -15,7 +15,9 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import java.util.Collections;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
@@ -24,31 +26,33 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
 public class HttpSinkTask extends SinkTask {
   private static final Logger log = LoggerFactory.getLogger(HttpSinkTask.class);
 
-  HttpSinkConfig config;
+  HttpSinkConfig httpSinkConfig;
+  ProducerConfig producerConfig;
   HttpApiWriter writer;
   int remainingRetries;
 
   @Override
   public void start(final Map<String, String> props) {
     log.info("Starting task");
-    config = new HttpSinkConfig(props);
+    httpSinkConfig = new HttpSinkConfig(props);
+    producerConfig = new ProducerConfig(Collections.unmodifiableMap(props));
+
     try {
       initWriter();
     } catch (Exception e) {
       throw new ConnectException(e);
     }
-    remainingRetries = config.maxRetries;
+    remainingRetries = httpSinkConfig.maxRetries;
   }
 
   protected void initWriter() throws Exception {
-    writer = new HttpApiWriter(config);
+    writer = new HttpApiWriter(httpSinkConfig, producerConfig);
   }
 
   @Override
@@ -81,11 +85,11 @@ public class HttpSinkTask extends SinkTask {
           throw new ConnectException(e);
         }
         remainingRetries--;
-        context.timeout(config.retryBackoffMs);
+        context.timeout(httpSinkConfig.retryBackoffMs);
         throw new RetriableException(e);
       }
     }
-    remainingRetries = config.maxRetries;
+    remainingRetries = httpSinkConfig.maxRetries;
   }
 
   @Override
