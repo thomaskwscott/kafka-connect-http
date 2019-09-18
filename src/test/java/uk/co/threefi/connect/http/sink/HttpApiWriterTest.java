@@ -15,9 +15,11 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -29,6 +31,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.threefi.connect.http.sink.HttpSinkConfig.RequestMethod;
 
@@ -42,9 +45,12 @@ public class HttpApiWriterTest {
   private final RestHelper restHelper = new RestHelper();
   private static final Pattern TOKEN_REQUEST_PATTERN =
           Pattern.compile("^grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=.*$");
-  
+
   private final String endPoint = "/test";
-  
+
+  @ClassRule
+  public static final SharedKafkaTestResource kafkaTestHelper = new SharedKafkaTestResource();
+
   @Before
   public void setUp() throws Exception {
     restHelper.start();
@@ -113,6 +119,47 @@ public class HttpApiWriterTest {
             .hasHeaders(
                     "Content-Type:application/json",
                     "Authorization:Bearer aaa.bbb.ccc");
+  }
+
+  @Test(expected = IOException.class)
+  public void canThrowExceptionOnUnsuccessfulResponse() throws Exception {
+    Map<String, String> properties = getProperties(RequestMethod.PUT);
+    properties.put(HttpSinkConfig.HTTP_API_URL,
+          "http://localhost:" + restHelper.getPort() + "/unauthorized");
+    HttpApiWriter writer = getHttpApiWriter(properties);
+    List<SinkRecord> sinkRecords = createSinkRecords(1);
+    writer.write(sinkRecords);
+  }
+
+  @Test
+  public void canSendResponseOverKafka() throws Exception {
+    final String responseTopic = "response.topic";
+
+    Map<String, String> properties = getProperties(RequestMethod.POST);
+    properties.put(HttpSinkConfig.RESPONSE_TOPIC, responseTopic);
+    properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+          kafkaTestHelper.getKafkaConnectString());
+    HttpApiWriter writer = getHttpApiWriter(properties);
+
+    List<SinkRecord> sinkRecords = createSinkRecords(1);
+    writer.write(sinkRecords);
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    commonAssert(capturedRequests, 2);
+
+    assertThat(capturedRequests.get(1))
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody((String) sinkRecords.get(0).value())
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc");
+
+    assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics()).hasSize(1);
+    assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics().get(0).name())
+          .isEqualTo(responseTopic);
+    assertThat(kafkaTestHelper.getKafkaTestUtils().consumeAllRecordsFromTopic(responseTopic))
+          .hasSize(1);
   }
 
   @Test
