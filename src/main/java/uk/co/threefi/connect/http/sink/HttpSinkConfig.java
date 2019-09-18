@@ -224,15 +224,15 @@ public class HttpSinkConfig extends AbstractConfig {
                     HEADER_SEPERATOR_DISPLAY
             )
             .define(
-                  RESPONSE_TOPIC,
+                    RESPONSE_TOPIC,
                     ConfigDef.Type.STRING,
-                  RESPONSE_TOPIC_DEFAULT,
+                    RESPONSE_TOPIC_DEFAULT,
                     Importance.LOW,
-                  RESPONSE_TOPIC_DOC,
+                    RESPONSE_TOPIC_DOC,
                     CONNECTION_GROUP,
-                   5,
+                    5,
                     Width.LONG,
-                  RESPONSE_TOPIC_DISPLAY
+                    RESPONSE_TOPIC_DISPLAY
             )
             .define(
                     REGEX_PATTERNS,

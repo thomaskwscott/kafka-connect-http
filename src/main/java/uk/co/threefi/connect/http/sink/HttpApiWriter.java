@@ -48,6 +48,7 @@ public class HttpApiWriter {
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
 
+
     HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig)
           throws Exception {
         this.httpSinkConfig = httpSinkConfig;
@@ -148,9 +149,10 @@ public class HttpApiWriter {
         // handle failed response
         log.debug("Received Response: " + response.toString());
         if (!HttpUtil.isResponseSuccessful(response)) {
-            log.warn("HTTP Response code: {} {} {}, Submitted payload: {}, url: {}",
+            throw new IOException(String.format(
+                  "HTTP Response code: %s %s %s, Submitted payload: %s, url: %s",
                   response.getStatusCode(), response.getStatusMessage(), response.getBody(),
-                  body, formattedUrl);
+                  body, formattedUrl));
         }
         if (!httpSinkConfig.responseTopic.isEmpty()) {
             HttpResponse httpResponse = new HttpResponse(response.getStatusCode(), formattedUrl,
