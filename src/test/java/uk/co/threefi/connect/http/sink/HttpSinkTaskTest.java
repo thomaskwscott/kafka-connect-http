@@ -15,8 +15,18 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import static org.easymock.EasyMock.expectLastCall;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
@@ -25,20 +35,11 @@ import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.easymock.EasyMockSupport;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import static org.easymock.EasyMock.expectLastCall;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 public class HttpSinkTaskTest extends EasyMockSupport {
 
     @Test
-    public void retries() throws IOException, ExecutionException, InterruptedException {
+    public void retries()
+          throws IOException, ExecutionException, InterruptedException, TimeoutException {
         final int maxRetries = 2;
         final int retryBackoffMs = 1000;
 

@@ -30,8 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
@@ -82,7 +84,7 @@ public class HttpApiWriter {
     }
 
     public void write(final Collection<SinkRecord> records)
-          throws IOException, ExecutionException, InterruptedException {
+          throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
         for (SinkRecord record : records) {
 
@@ -106,7 +108,8 @@ public class HttpApiWriter {
 
     }
 
-    public void flushBatches() throws IOException, ExecutionException, InterruptedException {
+    public void flushBatches()
+          throws IOException, ExecutionException, InterruptedException, TimeoutException {
         // send any outstanding batches
         for (Map.Entry<String, List<SinkRecord>> entry : batches.entrySet()) {
             sendBatch(entry.getKey());
@@ -114,7 +117,7 @@ public class HttpApiWriter {
     }
 
     private void sendBatch(String formattedKeyPattern)
-          throws IOException, ExecutionException, InterruptedException {
+          throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
         List<SinkRecord> records = batches.get(formattedKeyPattern);
         SinkRecord record = records.get(0);
@@ -155,8 +158,11 @@ public class HttpApiWriter {
                   body, formattedUrl));
         }
         if (!httpSinkConfig.responseTopic.isEmpty()) {
-            HttpResponse httpResponse = new HttpResponse(response.getStatusCode(), formattedUrl,
-                  response.getStatusMessage(), response.getBody());
+            HttpResponse httpResponse = new HttpResponse(
+                  response.getStatusCode(),
+                  formattedUrl,
+                  response.getStatusMessage() == null ? StringUtils.EMPTY : response.getStatusMessage() ,
+                  response.getBody() == null ? StringUtils.EMPTY : response.getBody());
             kafkaClient.publish(recordKey, httpSinkConfig.responseTopic, httpResponse);
         }
     }
@@ -167,12 +173,11 @@ public class HttpApiWriter {
 
         // apply regexes
         int replacementIndex = 0;
-        for (String pattern : httpSinkConfig.regexPatterns.split(httpSinkConfig.regexSeparator)) {
+        String[] regexPatterns = httpSinkConfig.regexPatterns.split(httpSinkConfig.regexSeparator);
+        for (String pattern : regexPatterns) {
             String replacement = "";
-            if (replacementIndex < httpSinkConfig.regexReplacements
-                  .split(httpSinkConfig.regexSeparator).length) {
-                replacement = httpSinkConfig.regexReplacements
-                      .split(httpSinkConfig.regexSeparator)[replacementIndex]
+            if (replacementIndex < regexPatterns.length) {
+                replacement = regexPatterns[replacementIndex]
                       .replace("${key}", record.key() == null ? "" : record.key().toString())
                       .replace("${topic}", record.topic());
             }

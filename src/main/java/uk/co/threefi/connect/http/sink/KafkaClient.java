@@ -23,9 +23,11 @@ public class KafkaClient {
 
     public void publish(String sourceKey, String responseTopic, HttpResponse httpResponse)
           throws ExecutionException, InterruptedException, TimeoutException {
+
         logger.info("Submitting to topic {} with payload {}", responseTopic, httpResponse);
         Future<RecordMetadata> response = producer
               .send(new ProducerRecord<>(responseTopic, sourceKey, httpResponse));
         response.get(20, TimeUnit.SECONDS);
+        logger.info("Message successfully sent to topic {}", responseTopic);
     }
 }
