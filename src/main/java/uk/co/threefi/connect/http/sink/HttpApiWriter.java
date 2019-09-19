@@ -161,7 +161,8 @@ public class HttpApiWriter {
             HttpResponse httpResponse = new HttpResponse(
                   response.getStatusCode(),
                   formattedUrl,
-                  response.getStatusMessage() == null ? StringUtils.EMPTY : response.getStatusMessage() ,
+                  response.getStatusMessage() == null ? StringUtils.EMPTY
+                        : response.getStatusMessage(),
                   response.getBody() == null ? StringUtils.EMPTY : response.getBody());
             kafkaClient.publish(recordKey, httpSinkConfig.responseTopic, httpResponse);
         }
@@ -176,8 +177,10 @@ public class HttpApiWriter {
         String[] regexPatterns = httpSinkConfig.regexPatterns.split(httpSinkConfig.regexSeparator);
         for (String pattern : regexPatterns) {
             String replacement = "";
-            if (replacementIndex < regexPatterns.length) {
-                replacement = regexPatterns[replacementIndex]
+            String[] regexReplacements = httpSinkConfig.regexReplacements
+                  .split(httpSinkConfig.regexSeparator);
+            if (replacementIndex < regexReplacements.length) {
+                replacement = regexReplacements[replacementIndex]
                       .replace("${key}", record.key() == null ? "" : record.key().toString())
                       .replace("${topic}", record.topic());
             }
