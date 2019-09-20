@@ -77,6 +77,7 @@ public class KafkaClientTest {
                     KafkaAvroSerializer.class.getName());
         properties.put("schema.registry.url", "http://localhost:8081");
         properties.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 20000);
+        properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 1000);
         ProducerConfig producerConfig = new ProducerConfig(properties);
 
         return new KafkaClient(producerConfig);
