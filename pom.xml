@@ -43,7 +43,7 @@
     </licenses>
 
     <properties>
-        <confluent.version>5.2.1</confluent.version>
+        <confluent.version>5.2.2</confluent.version>
         <commons-io.version>2.4</commons-io.version>
         <junit.version>4.12</junit.version>
         <java.version>8</java.version>
@@ -92,7 +92,7 @@
         <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-avro-serializer</artifactId>
-            <version>5.2.2</version>
+            <version>${confluent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
