@@ -1,5 +1,6 @@
 package uk.co.threefi.connect.http.sink;
 
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +9,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.threefi.connect.http.HttpResponse;
@@ -15,7 +17,13 @@ import uk.co.threefi.connect.http.HttpResponse;
 public class KafkaClient {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaClient.class);
-    private final KafkaProducer<String, HttpResponse> producer;
+    private final KafkaProducer<String, Object> producer;
+
+    public KafkaClient(ProducerConfig producerConfig,
+          Serializer<String> keySerializer,
+          KafkaAvroSerializer valueSerializer) {
+        producer = new KafkaProducer<>(producerConfig.originals(), keySerializer, valueSerializer);
+    }
 
     public KafkaClient(ProducerConfig producerConfig) {
         producer = new KafkaProducer<>(producerConfig.originals());
