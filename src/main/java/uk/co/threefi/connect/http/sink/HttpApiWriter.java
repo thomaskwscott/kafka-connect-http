@@ -15,6 +15,7 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -32,7 +33,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -53,6 +53,12 @@ public class HttpApiWriter {
 
     HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig)
           throws Exception {
+        this(httpSinkConfig,producerConfig,null) ;
+    }
+
+    HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig,
+          KafkaAvroSerializer valueSerializer)
+          throws Exception {
         this.httpSinkConfig = httpSinkConfig;
         PayloadGenerator payloadGenerator = new PayloadGenerator(
               extractPrivateKeyFromConfig(httpSinkConfig),
@@ -68,7 +74,7 @@ public class HttpApiWriter {
                     payloadGenerator);
 
         httpClient = new AuthenticatedJavaNetHttpClient(authenticationProvider);
-        kafkaClient = new KafkaClient(producerConfig);
+        kafkaClient = new KafkaClient(producerConfig,null, valueSerializer);
     }
 
     private PrivateKey extractPrivateKeyFromConfig(HttpSinkConfig config)

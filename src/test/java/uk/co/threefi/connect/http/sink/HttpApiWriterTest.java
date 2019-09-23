@@ -15,7 +15,12 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static uk.co.threefi.connect.http.sink.RequestInfoAssert.assertThat;
+
 import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
+import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -33,10 +38,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import uk.co.threefi.connect.http.HttpResponse;
 import uk.co.threefi.connect.http.sink.HttpSinkConfig.RequestMethod;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static uk.co.threefi.connect.http.sink.RequestInfoAssert.assertThat;
 
 public class HttpApiWriterTest {
   private static final String PRIVATE_KEY = Base64.getEncoder()
@@ -562,7 +565,16 @@ public class HttpApiWriterTest {
   private HttpApiWriter getHttpApiWriter(Map<String, String> properties) throws Exception {
     HttpSinkConfig config = new HttpSinkConfig(properties);
     ProducerConfig producerConfig = new ProducerConfig(Collections.unmodifiableMap(properties));
-    return new HttpApiWriter(config, producerConfig);
+
+    Map<String, Object> serializerProperties = new HashMap<>();
+    serializerProperties.put(KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS, true);
+    serializerProperties.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "nothing");
+    MockSchemaRegistryClient mockSchemaRegistryClient = new MockSchemaRegistryClient();
+    mockSchemaRegistryClient.register("response.topic-value", HttpResponse.getClassSchema());
+    KafkaAvroSerializer serializer = new KafkaAvroSerializer(mockSchemaRegistryClient);
+    serializer.configure(serializerProperties, false);
+
+    return new HttpApiWriter(config, producerConfig, serializer);
   }
 
   private void commonAssert(List<RequestInfo> capturedRequests, int capturedRequestSize) {
