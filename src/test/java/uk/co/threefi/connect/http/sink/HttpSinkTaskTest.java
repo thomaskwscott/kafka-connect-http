@@ -18,6 +18,7 @@ package uk.co.threefi.connect.http.sink;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
 
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
@@ -65,13 +66,16 @@ public class HttpSinkTaskTest extends EasyMockSupport {
         properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
         properties.put(HttpSinkConfig.MAX_RETRIES, String.valueOf(maxRetries));
         properties.put(HttpSinkConfig.RETRY_BACKOFF_MS, String.valueOf(retryBackoffMs));
-        properties.put(ProducerConfig.RETRIES_CONFIG, "1");
-        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://localhost:9092");
-        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+
+        properties.put(RESPONSE_PRODUCER + ProducerConfig.RETRIES_CONFIG, "1");
+        properties.put(RESPONSE_PRODUCER + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+              "http://localhost:9092");
+        properties.put(RESPONSE_PRODUCER + ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
               "org.apache.kafka.common.serialization.StringSerializer");
         properties
-              .put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class.getName());
-        properties.put("schema.registry.url","http://localhost:8081");
+              .put(RESPONSE_PRODUCER + ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                    KafkaAvroSerializer.class.getName());
+        properties.put(RESPONSE_PRODUCER + "schema.registry.url", "http://localhost:8081");
         task.start(properties);
 
         replayAll();

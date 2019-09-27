@@ -146,6 +146,7 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String RESPONSE_TOPIC_DEFAULT = "";
     private static final String RESPONSE_TOPIC_DOC = "The response topic to use for all responses";
     private static final String RESPONSE_TOPIC_DISPLAY = "Response Topic";
+    public static final String RESPONSE_PRODUCER = "response.producer.";
 
     private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 

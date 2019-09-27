@@ -25,10 +25,6 @@ public class KafkaClient {
         producer = new KafkaProducer<>(producerConfig.originals(), keySerializer, valueSerializer);
     }
 
-    public KafkaClient(ProducerConfig producerConfig) {
-        producer = new KafkaProducer<>(producerConfig.originals());
-    }
-
     public void publish(String sourceKey, String responseTopic, HttpResponse httpResponse)
           throws ExecutionException, InterruptedException, TimeoutException {
 

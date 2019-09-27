@@ -15,7 +15,13 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
+
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
@@ -25,9 +31,6 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collection;
-import java.util.Map;
 
 public class HttpSinkTask extends SinkTask {
   private static final Logger log = LoggerFactory.getLogger(HttpSinkTask.class);
@@ -41,8 +44,9 @@ public class HttpSinkTask extends SinkTask {
   public void start(final Map<String, String> props) {
     log.info("Starting task");
     httpSinkConfig = new HttpSinkConfig(props);
-    producerConfig = new ProducerConfig(Collections.unmodifiableMap(props));
 
+    Map<String, String> producerConfigProps = obtainProducerConfigProps(props);
+    producerConfig = new ProducerConfig(Collections.unmodifiableMap(producerConfigProps));
     try {
       initWriter();
     } catch (Exception e) {
@@ -104,6 +108,14 @@ public class HttpSinkTask extends SinkTask {
   @Override
   public String version() {
     return getClass().getPackage().getImplementationVersion();
+  }
+
+  private Map<String, String> obtainProducerConfigProps(Map<String, String> props) {
+    return props.entrySet().stream()
+          .filter(entry -> entry.getKey().startsWith(RESPONSE_PRODUCER))
+          .collect(Collectors.toMap(
+                entry -> entry.getKey().replaceFirst(RESPONSE_PRODUCER, ""),
+                Entry::getValue));
   }
 
 }
