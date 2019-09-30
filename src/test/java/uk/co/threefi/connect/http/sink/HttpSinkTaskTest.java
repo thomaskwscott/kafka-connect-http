@@ -44,7 +44,8 @@ public class HttpSinkTaskTest extends EasyMockSupport {
         final int maxRetries = 2;
         final int retryBackoffMs = 1000;
 
-        Set<SinkRecord> records = Collections.singleton(new SinkRecord("stub", 0, null, null, null, "someVal", 0));
+        Set<SinkRecord> records = Collections
+              .singleton(new SinkRecord("stub", 0, null, null, null, "someVal", 0));
         final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
         SinkTaskContext ctx = createMock(SinkTaskContext.class);
 
@@ -66,6 +67,8 @@ public class HttpSinkTaskTest extends EasyMockSupport {
         properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
         properties.put(HttpSinkConfig.MAX_RETRIES, String.valueOf(maxRetries));
         properties.put(HttpSinkConfig.RETRY_BACKOFF_MS, String.valueOf(retryBackoffMs));
+        properties.put("value.converter", "io.confluent.connect.avro.AvroConverter");
+        properties.put("key.converter", "org.apache.kafka.connect.storage.StringConverter");
 
         properties.put(RESPONSE_PRODUCER + ProducerConfig.RETRIES_CONFIG, "1");
         properties.put(RESPONSE_PRODUCER + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,

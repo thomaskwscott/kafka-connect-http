@@ -15,6 +15,7 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.security.KeyFactory;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -35,11 +37,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.threefi.connect.http.HttpResponse;
 import uk.co.threefi.connect.http.util.HttpUtil;
+import uk.co.threefi.connect.http.util.SimpleJsonConverter;
 
 
 public class HttpApiWriter {
@@ -50,10 +54,9 @@ public class HttpApiWriter {
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
 
-
     HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig)
           throws Exception {
-        this(httpSinkConfig,producerConfig,null) ;
+        this(httpSinkConfig, producerConfig, null);
     }
 
     HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig,
@@ -74,7 +77,7 @@ public class HttpApiWriter {
                     payloadGenerator);
 
         httpClient = new AuthenticatedJavaNetHttpClient(authenticationProvider);
-        kafkaClient = new KafkaClient(producerConfig,null, valueSerializer);
+        kafkaClient = new KafkaClient(producerConfig, null, valueSerializer);
     }
 
     private PrivateKey extractPrivateKeyFromConfig(HttpSinkConfig config)
@@ -127,7 +130,7 @@ public class HttpApiWriter {
 
         List<SinkRecord> records = batches.get(formattedKeyPattern);
         SinkRecord record = records.get(0);
-        String recordKey = record.key() == null ? "" : record.key().toString();
+        String recordKey = record.key() == null ? "" : StringUtils.trim(record.key().toString());
 
         // build url - ${key} and ${topic} can be replaced with message values
         // the first record in the batch is used to build the url as we assume it will be consistent across all records.
@@ -144,11 +147,11 @@ public class HttpApiWriter {
               .collect(Collectors.toMap((s) -> s[0], (s) -> s[1]));
 
         String body = records.stream()
-              .map(this::buildRecord)
+              .map(sinkRecord -> buildRecord(sinkRecord, recordKey))
               .collect(Collectors.joining(httpSinkConfig.batchSeparator, httpSinkConfig.batchPrefix,
                     httpSinkConfig.batchSuffix));
 
-        log.debug("Submitting payload: {} to url: {}", body, formattedUrl);
+        log.info("Submitting payload: {} to url: {}", body, formattedUrl);
         Response response = httpClient
               .makeRequest(requestMethod.toString(), formattedUrl, headers, body);
 
@@ -174,9 +177,11 @@ public class HttpApiWriter {
         }
     }
 
-    private String buildRecord(SinkRecord record) {
+    private String buildRecord(SinkRecord record, String recordKey) {
         // add payload
-        String value = record.value().toString();
+        String value = record.value() instanceof Struct
+              ? buildJsonFromStruct((Struct) record.value())
+              : record.value().toString();
 
         // apply regexes
         int replacementIndex = 0;
@@ -187,7 +192,7 @@ public class HttpApiWriter {
                   .split(httpSinkConfig.regexSeparator);
             if (replacementIndex < regexReplacements.length) {
                 replacement = regexReplacements[replacementIndex]
-                      .replace("${key}", record.key() == null ? "" : record.key().toString())
+                      .replace("${key}", recordKey)
                       .replace("${topic}", record.topic());
             }
             value = value.replaceAll(pattern, replacement);
@@ -196,4 +201,21 @@ public class HttpApiWriter {
         return value;
     }
 
+    private static String buildJsonFromStruct(Struct struct) {
+        JsonNode jsonNode = new SimpleJsonConverter().fromConnectData(struct.schema(), struct);
+        stripNulls(jsonNode);
+        return jsonNode.toString();
+    }
+
+    private static void stripNulls(JsonNode node) {
+        Iterator<JsonNode> it = node.iterator();
+        while (it.hasNext()) {
+            JsonNode child = it.next();
+            if (child.isNull()) {
+                it.remove();
+            } else {
+                stripNulls(child);
+            }
+        }
+    }
 }

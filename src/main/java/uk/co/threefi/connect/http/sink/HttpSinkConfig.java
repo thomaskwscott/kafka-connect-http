@@ -113,7 +113,7 @@ public class HttpSinkConfig extends AbstractConfig {
 
     public static final String BATCH_SEPARATOR = "batch.seperator";
     private static final String BATCH_SEPARATOR_DEFAULT = ",";
-    private static final String BATCH_SEPARATOR_DOC = "seperator for records in a batch.";
+    private static final String BATCH_SEPARATOR_DOC = "Separator for records in a batch.";
     private static final String BATCH_SEPARATOR_DISPLAY = "Batch seperator";
 
     public static final String CONNECTION_GROUP = "Connection";
