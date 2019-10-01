@@ -165,7 +165,7 @@ public class SimpleJsonConverter {
                     return JsonNodeFactory.instance.binaryNode(valueArr);
 
                 case ARRAY: {
-                    Collection collection = (Collection) value;
+                    Collection<?> collection = (Collection<?>) value;
                     ArrayNode list = JsonNodeFactory.instance.arrayNode();
                     for (Object elem : collection) {
                         Schema valueSchema = schema == null ? null : schema.valueSchema();
