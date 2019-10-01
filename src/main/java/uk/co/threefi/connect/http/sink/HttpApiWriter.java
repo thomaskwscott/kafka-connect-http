@@ -147,7 +147,7 @@ public class HttpApiWriter {
               .collect(Collectors.toMap((s) -> s[0], (s) -> s[1]));
 
         String body = records.stream()
-              .map(sinkRecord -> buildRecord(sinkRecord))
+              .map(this::buildRecord)
               .collect(Collectors.joining(httpSinkConfig.batchSeparator, httpSinkConfig.batchPrefix,
                     httpSinkConfig.batchSuffix));
 
