@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaBuilder;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.After;
 import org.junit.Before;
@@ -512,21 +515,63 @@ public class HttpApiWriterTest {
     commonAssert(capturedRequests, 3);
 
     assertThat(capturedRequests.get(1))
-            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
-            .hasUrl(endPoint)
-            .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1")
-            .hasHeaders(
-                    "Content-Type:application/json",
-                    "Authorization:Bearer aaa.bbb.ccc",
-                    "Cache-Control:no-cache");
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1")
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc",
+                "Cache-Control:no-cache");
     assertThat(capturedRequests.get(2))
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2")
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc",
+                "Cache-Control:no-cache");
+  }
+
+
+  @Test
+  public void testStructValue() throws Exception {
+
+    Map<String,String> properties = getProperties(RequestMethod.POST);
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+
+    HttpApiWriter writer = getHttpApiWriter(properties);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+
+    Schema valueSchema = SchemaBuilder.struct()
+            .field("id", Schema.STRING_SCHEMA)
+            .field("name", Schema.OPTIONAL_STRING_SCHEMA)
+            .build();
+
+    Struct structData = new Struct(valueSchema)
+            .put("id", "fake-user-id")
+            .put("name", null);
+
+    sinkRecords.add(new SinkRecord("user-topic",0,null,"fake-user-id",valueSchema, structData,0));
+    writer.write(sinkRecords);
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+
+
+    assertThat(capturedRequests.get(1))
             .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
             .hasUrl(endPoint)
-            .hasBody("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2")
+            .hasBody("fake-user-id{\"id\":\"fake-user-id\"}user-topic")
             .hasHeaders(
                     "Content-Type:application/json",
                     "Authorization:Bearer aaa.bbb.ccc",
                     "Cache-Control:no-cache");
+
   }
 
   private Map<String, String> getProperties(RequestMethod requestMethod) {

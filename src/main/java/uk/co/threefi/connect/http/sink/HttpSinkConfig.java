@@ -113,7 +113,7 @@ public class HttpSinkConfig extends AbstractConfig {
 
     public static final String BATCH_SEPARATOR = "batch.seperator";
     private static final String BATCH_SEPARATOR_DEFAULT = ",";
-    private static final String BATCH_SEPARATOR_DOC = "seperator for records in a batch.";
+    private static final String BATCH_SEPARATOR_DOC = "Separator for records in a batch.";
     private static final String BATCH_SEPARATOR_DISPLAY = "Batch seperator";
 
     public static final String CONNECTION_GROUP = "Connection";
@@ -146,6 +146,7 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String RESPONSE_TOPIC_DEFAULT = "";
     private static final String RESPONSE_TOPIC_DOC = "The response topic to use for all responses";
     private static final String RESPONSE_TOPIC_DISPLAY = "Response Topic";
+    public static final String RESPONSE_PRODUCER = "response.producer.";
 
     private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 
