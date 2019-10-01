@@ -509,28 +509,27 @@ public class HttpApiWriterTest {
     sinkRecords.add(new SinkRecord("someTopic1",0,null,"someKey2",null, payload1,0));
     sinkRecords.add(new SinkRecord("someTopic2",0,null,"someKey1",null, payload1,0));
 
-
     writer.write(sinkRecords);
 
     List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
     commonAssert(capturedRequests, 3);
 
     assertThat(capturedRequests.get(1))
-            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
-            .hasUrl(endPoint)
-            .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1")
-            .hasHeaders(
-                    "Content-Type:application/json",
-                    "Authorization:Bearer aaa.bbb.ccc",
-                    "Cache-Control:no-cache");
-//    assertThat(capturedRequests.get(2))
-//            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
-//            .hasUrl(endPoint)
-//            .hasBody("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2")
-//            .hasHeaders(
-//                    "Content-Type:application/json",
-//                    "Authorization:Bearer aaa.bbb.ccc",
-//                    "Cache-Control:no-cache");
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody("someKey1someValuesomeTopic1,someKey2someValuesomeTopic1")
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc",
+                "Cache-Control:no-cache");
+    assertThat(capturedRequests.get(2))
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody("someKey2someValuesomeTopic2,someKey1someValuesomeTopic2")
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc",
+                "Cache-Control:no-cache");
   }
 
 

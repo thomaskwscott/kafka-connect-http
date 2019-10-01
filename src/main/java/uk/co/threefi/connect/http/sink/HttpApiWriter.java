@@ -147,7 +147,7 @@ public class HttpApiWriter {
               .collect(Collectors.toMap((s) -> s[0], (s) -> s[1]));
 
         String body = records.stream()
-              .map(sinkRecord -> buildRecord(sinkRecord, recordKey))
+              .map(this::buildRecord)
               .collect(Collectors.joining(httpSinkConfig.batchSeparator, httpSinkConfig.batchPrefix,
                     httpSinkConfig.batchSuffix));
 
@@ -177,7 +177,7 @@ public class HttpApiWriter {
         }
     }
 
-    private String buildRecord(SinkRecord record, String recordKey) {
+    private String buildRecord(SinkRecord record) {
         // add payload
         String value = record.value() instanceof Struct
               ? buildJsonFromStruct((Struct) record.value())
@@ -192,7 +192,7 @@ public class HttpApiWriter {
                   .split(httpSinkConfig.regexSeparator);
             if (replacementIndex < regexReplacements.length) {
                 replacement = regexReplacements[replacementIndex]
-                      .replace("${key}", recordKey)
+                      .replace("${key}", record.key() == null ? "" : StringUtils.trim(record.key().toString()))
                       .replace("${topic}", record.topic());
             }
             value = value.replaceAll(pattern, replacement);
