@@ -20,8 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
@@ -111,10 +109,20 @@ public class HttpSinkConfig extends AbstractConfig {
             + "this will be applied once at the end of the batch of records.";
     private static final String BATCH_SUFFIX_DISPLAY = "Batch suffix";
 
-    public static final String BATCH_SEPARATOR = "batch.seperator";
+    public static final String BATCH_SEPARATOR = "batch.separator";
     private static final String BATCH_SEPARATOR_DEFAULT = ",";
     private static final String BATCH_SEPARATOR_DOC = "Separator for records in a batch.";
-    private static final String BATCH_SEPARATOR_DISPLAY = "Batch seperator";
+    private static final String BATCH_SEPARATOR_DISPLAY = "Batch separator";
+
+    public static final String BATCH_BODY_PREFIX = "batch.body.prefix";
+    private static final String BATCH_BODY_PREFIX_DEFAULT = "";
+    private static final String BATCH_BODY_PREFIX_DOC = "Prefix for the body of the payload being sent";
+    private static final String BATCH_BODY_PREFIX_DISPLAY = "Batch body prefix";
+
+    public static final String BATCH_BODY_SUFFIX = "batch.body.suffix";
+    private static final String BATCH_BODY_SUFFIX_DEFAULT = "";
+    private static final String BATCH_BODY_SUFFIX_DOC = "Suffix for the body of the payload being sent";
+    private static final String BATCH_BODY_SUFFIX_DISPLAY = "Batch body suffix";
 
     public static final String CONNECTION_GROUP = "Connection";
     private static final String RETRIES_GROUP = "Retries";
@@ -147,6 +155,8 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String RESPONSE_TOPIC_DOC = "The response topic to use for all responses";
     private static final String RESPONSE_TOPIC_DISPLAY = "Response Topic";
     public static final String RESPONSE_PRODUCER = "response.producer.";
+
+
 
     private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 
@@ -324,6 +334,28 @@ public class HttpSinkConfig extends AbstractConfig {
                     BATCH_SEPARATOR_DISPLAY
             )
             .define(
+                   BATCH_BODY_PREFIX,
+                   ConfigDef.Type.STRING,
+                   BATCH_BODY_PREFIX_DEFAULT,
+                   ConfigDef.Importance.HIGH,
+                   BATCH_BODY_PREFIX_DOC,
+                   BATCHING_GROUP,
+                   5,
+                   ConfigDef.Width.LONG,
+                   BATCH_BODY_PREFIX_DISPLAY
+            )
+            .define(
+                   BATCH_BODY_SUFFIX,
+                   ConfigDef.Type.STRING,
+                   BATCH_BODY_SUFFIX_DEFAULT,
+                   ConfigDef.Importance.HIGH,
+                   BATCH_BODY_SUFFIX_DOC,
+                   BATCHING_GROUP,
+                   6,
+                   ConfigDef.Width.LONG,
+                   BATCH_BODY_SUFFIX_DISPLAY
+            )
+            .define(
                     SALESFORCE_AUTHENTICATION_ROOT,
                     ConfigDef.Type.STRING,
                     SALESFORCE_AUTHENTICATION_ROOT_DEFAULT,
@@ -382,6 +414,8 @@ public class HttpSinkConfig extends AbstractConfig {
     public String batchPrefix;
     public String batchSuffix;
     public String batchSeparator;
+    public String batchBodyPrefix;
+    public String batchBodySuffix;
     public int batchMaxSize;
     public final String salesforceAuthenticationRoot;
     public final String salesforceAuthenticationClientId;
@@ -405,6 +439,8 @@ public class HttpSinkConfig extends AbstractConfig {
         batchPrefix = getString(BATCH_PREFIX);
         batchSuffix = getString(BATCH_SUFFIX);
         batchSeparator = getString(BATCH_SEPARATOR);
+        batchBodyPrefix = getString(BATCH_BODY_PREFIX);
+        batchBodySuffix = getString(BATCH_BODY_SUFFIX);
         salesforceAuthenticationRoot = getString(SALESFORCE_AUTHENTICATION_ROOT);
         salesforceAuthenticationClientId = getString(SALESFORCE_AUTHENTICATION_CLIENT_ID);
         salesforceAuthenticationUsername = getString(SALESFORCE_AUTHENTICATION_USERNAME);

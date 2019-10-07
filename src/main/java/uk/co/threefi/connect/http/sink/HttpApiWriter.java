@@ -105,7 +105,7 @@ public class HttpApiWriter {
             // add to batch and check for batch size limit
             if (!batches.containsKey(formattedKeyPattern)) {
                 batches.put(formattedKeyPattern,
-                      new ArrayList<SinkRecord>(Arrays.asList(new SinkRecord[]{record})));
+                      new ArrayList<>(Arrays.asList(new SinkRecord[]{record})));
             } else {
                 batches.get(formattedKeyPattern).add(record);
             }
@@ -117,7 +117,7 @@ public class HttpApiWriter {
 
     }
 
-    public void flushBatches()
+    private void flushBatches()
           throws IOException, ExecutionException, InterruptedException, TimeoutException {
         // send any outstanding batches
         for (Map.Entry<String, List<SinkRecord>> entry : batches.entrySet()) {
@@ -129,14 +129,11 @@ public class HttpApiWriter {
           throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
         List<SinkRecord> records = batches.get(formattedKeyPattern);
-        SinkRecord record = records.get(0);
-        String recordKey = record.key() == null ? "" : StringUtils.trim(record.key().toString());
 
-        // build url - ${key} and ${topic} can be replaced with message values
-        // the first record in the batch is used to build the url as we assume it will be consistent across all records.
-        String formattedUrl = httpSinkConfig.httpApiUrl
-              .replace("${key}", recordKey)
-              .replace("${topic}", record.topic());
+        // the first record in the batch is used to build the url as we
+        // assume it will be consistent across all records.
+        SinkRecord record = records.get(0);
+        String formattedUrl = evaluateReplacements(httpSinkConfig.httpApiUrl, record);
         HttpSinkConfig.RequestMethod requestMethod = httpSinkConfig.requestMethod;
 
         // add headers
@@ -173,7 +170,7 @@ public class HttpApiWriter {
                   response.getStatusMessage() == null ? StringUtils.EMPTY
                         : response.getStatusMessage(),
                   response.getBody() == null ? StringUtils.EMPTY : response.getBody());
-            kafkaClient.publish(recordKey, httpSinkConfig.responseTopic, httpResponse);
+            kafkaClient.publish(getKey(record), httpSinkConfig.responseTopic, httpResponse);
         }
     }
 
@@ -182,6 +179,7 @@ public class HttpApiWriter {
         String value = record.value() instanceof Struct
               ? buildJsonFromStruct((Struct) record.value())
               : record.value().toString();
+        value = httpSinkConfig.batchBodyPrefix + value + httpSinkConfig.batchBodySuffix;
 
         // apply regexes
         int replacementIndex = 0;
@@ -191,14 +189,22 @@ public class HttpApiWriter {
             String[] regexReplacements = httpSinkConfig.regexReplacements
                   .split(httpSinkConfig.regexSeparator);
             if (replacementIndex < regexReplacements.length) {
-                replacement = regexReplacements[replacementIndex]
-                      .replace("${key}", record.key() == null ? "" : StringUtils.trim(record.key().toString()))
-                      .replace("${topic}", record.topic());
+                replacement = evaluateReplacements(regexReplacements[replacementIndex], record);
             }
             value = value.replaceAll(pattern, replacement);
             replacementIndex++;
         }
         return value;
+    }
+
+    private String evaluateReplacements(String inputString, SinkRecord record) {
+        return inputString
+              .replace("${key}", getKey(record))
+              .replace("${topic}", record.topic());
+    }
+
+    private String getKey(SinkRecord record) {
+        return record.key() == null ? "" : StringUtils.trim(record.key().toString());
     }
 
     private static String buildJsonFromStruct(Struct struct) {
