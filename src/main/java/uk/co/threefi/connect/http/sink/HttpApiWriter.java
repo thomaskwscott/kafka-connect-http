@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +54,7 @@ public class HttpApiWriter {
     private final HttpSinkConfig httpSinkConfig;
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
+    private static final String HEADER_VALUE_SEPARATOR = ":";
 
     HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig)
           throws Exception {
@@ -98,14 +100,13 @@ public class HttpApiWriter {
         for (SinkRecord record : records) {
 
             // build batch key
-            String formattedKeyPattern = httpSinkConfig.batchKeyPattern
-                  .replace("${key}", record.key() == null ? "" : record.key().toString())
-                  .replace("${topic}", record.topic());
+            String formattedKeyPattern = evaluateReplacements(httpSinkConfig.batchKeyPattern,
+                  record);
 
             // add to batch and check for batch size limit
             if (!batches.containsKey(formattedKeyPattern)) {
                 batches.put(formattedKeyPattern,
-                      new ArrayList<>(Arrays.asList(new SinkRecord[]{record})));
+                      new ArrayList<>(Collections.singletonList(record)));
             } else {
                 batches.get(formattedKeyPattern).add(record);
             }
@@ -114,7 +115,6 @@ public class HttpApiWriter {
             }
         }
         flushBatches();
-
     }
 
     private void flushBatches()
@@ -139,8 +139,8 @@ public class HttpApiWriter {
         // add headers
         Map<String, String> headers = Arrays
               .stream(httpSinkConfig.headers.split(httpSinkConfig.headerSeparator))
-              .filter((s) -> s.contains(":"))
-              .map((s) -> s.split(":"))
+              .filter((s) -> s.contains(HEADER_VALUE_SEPARATOR))
+              .map((s) -> s.split(HEADER_VALUE_SEPARATOR))
               .collect(Collectors.toMap((s) -> s[0], (s) -> s[1]));
 
         String body = records.stream()
@@ -163,11 +163,13 @@ public class HttpApiWriter {
                   response.getStatusCode(), response.getStatusMessage(), response.getBody(),
                   body, formattedUrl));
         }
+        // Uses first key of batch as key
         if (!httpSinkConfig.responseTopic.isEmpty()) {
             HttpResponse httpResponse = new HttpResponse(
                   response.getStatusCode(),
                   formattedUrl,
-                  response.getStatusMessage() == null ? StringUtils.EMPTY
+                  response.getStatusMessage() == null
+                        ? StringUtils.EMPTY
                         : response.getStatusMessage(),
                   response.getBody() == null ? StringUtils.EMPTY : response.getBody());
             kafkaClient.publish(getKey(record), httpSinkConfig.responseTopic, httpResponse);
@@ -175,17 +177,15 @@ public class HttpApiWriter {
     }
 
     private String buildRecord(SinkRecord record) {
-        // add payload
         String value = record.value() instanceof Struct
               ? buildJsonFromStruct((Struct) record.value())
               : record.value().toString();
         value = httpSinkConfig.batchBodyPrefix + value + httpSinkConfig.batchBodySuffix;
 
-        // apply regexes
         int replacementIndex = 0;
         String[] regexPatterns = httpSinkConfig.regexPatterns.split(httpSinkConfig.regexSeparator);
         for (String pattern : regexPatterns) {
-            String replacement = "";
+            String replacement = StringUtils.EMPTY;
             String[] regexReplacements = httpSinkConfig.regexReplacements
                   .split(httpSinkConfig.regexSeparator);
             if (replacementIndex < regexReplacements.length) {
@@ -204,7 +204,7 @@ public class HttpApiWriter {
     }
 
     private String getKey(SinkRecord record) {
-        return record.key() == null ? "" : StringUtils.trim(record.key().toString());
+        return record.key() == null ? StringUtils.EMPTY : StringUtils.trim(record.key().toString());
     }
 
     private static String buildJsonFromStruct(Struct struct) {

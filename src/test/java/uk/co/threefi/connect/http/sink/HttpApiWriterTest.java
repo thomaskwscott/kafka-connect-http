@@ -574,6 +574,41 @@ public class HttpApiWriterTest {
 
   }
 
+  @Test
+  public void canAddBatchBodyPrefix() throws Exception {
+    String bodyPrefix = "\"method\" : \"PATCH\",";
+    canAddBatchBodyAffix(HttpSinkConfig.BATCH_BODY_PREFIX, bodyPrefix);
+  }
+
+  @Test
+  public void canAddBatchSuffix() throws Exception {
+    String bodySuffix = ", \"referenceId\" : \"334234\"";
+    canAddBatchBodyAffix(HttpSinkConfig.BATCH_BODY_SUFFIX, bodySuffix);
+  }
+
+  private void canAddBatchBodyAffix(String configName, String affix) throws Exception {
+    Map<String, String> properties = getProperties(RequestMethod.POST);
+    properties.put(configName, affix);
+    HttpApiWriter writer = getHttpApiWriter(properties);
+    List<SinkRecord> sinkRecords = createSinkRecords(1);
+    writer.write(sinkRecords);
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    commonAssert(capturedRequests, 2);
+
+    String body = properties.containsKey(HttpSinkConfig.BATCH_BODY_PREFIX)
+          ? affix + sinkRecords.get(0).value()
+          : sinkRecords.get(0).value() + affix;
+
+    assertThat(capturedRequests.get(1))
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody(body)
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc");
+  }
+
   private Map<String, String> getProperties(RequestMethod requestMethod) {
     int port = restHelper.getPort();
     String testUrl = "http://localhost:" + port + endPoint;
