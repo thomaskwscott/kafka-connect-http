@@ -25,15 +25,7 @@ import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -211,7 +203,7 @@ public class HttpApiWriter {
     private String buildJsonFromStruct(Struct struct) {
         JsonNode jsonNode = new SimpleJsonConverter().fromConnectData(struct.schema(), struct);
         stripNulls(jsonNode);
-        ((ObjectNode) jsonNode).remove(httpSinkConfig.batchBodyUuidFieldName);
+        ((ObjectNode) jsonNode).remove(httpSinkConfig.batchBodyFieldFilter);
         return jsonNode.toString();
     }
 
@@ -226,4 +218,18 @@ public class HttpApiWriter {
             }
         }
     }
+
+//    private void filterOutFields(JsonNode node) {
+//        Collection = new Collections(httpSinkConfig.batchBodyFieldFilter)
+//        Set set = new HashSet(httpSinkConfig.batchBodyFieldFilter);
+//        Iterator<JsonNode> it = node.iterator();
+//        while (it.hasNext()) {
+//            JsonNode child = it.next();
+//            if (child.) {
+//                it.remove();
+//            } else {
+//                stripNulls(child);
+//            }
+//        }
+//    }
 }

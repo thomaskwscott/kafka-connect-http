@@ -575,7 +575,7 @@ public class HttpApiWriterTest {
   }
 
   @Test
-  public void testStructValueUuidRemoval() throws Exception {
+  public void testStructValueRemoveList() throws Exception {
 
     Map<String,String> properties = getProperties(RequestMethod.POST);
     properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
@@ -585,7 +585,7 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
     properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
-    properties.put(HttpSinkConfig.BATCH_BODY_UUID_FIELD_NAME,"id");
+    properties.put(HttpSinkConfig.BATCH_BODY_FIELD_FILTER,"id,test");
 
     HttpApiWriter writer = getHttpApiWriter(properties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
@@ -593,11 +593,13 @@ public class HttpApiWriterTest {
     Schema valueSchema = SchemaBuilder.struct()
             .field("id", Schema.STRING_SCHEMA)
             .field("name", Schema.OPTIONAL_STRING_SCHEMA)
+            .field("test", Schema.OPTIONAL_STRING_SCHEMA)
             .build();
 
     Struct structData = new Struct(valueSchema)
             .put("id", "fake-user-id")
-            .put("name", "John Smith");
+            .put("name", "John Smith")
+            .put("test", "To be removed");
 
     sinkRecords.add(new SinkRecord("user-topic",0,null,"fake-user-id",valueSchema, structData,0));
     writer.write(sinkRecords);
@@ -627,7 +629,7 @@ public class HttpApiWriterTest {
     properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
     properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
     properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
-    properties.put(HttpSinkConfig.BATCH_BODY_UUID_FIELD_NAME,"some-other-field");
+    properties.put(HttpSinkConfig.BATCH_BODY_FIELD_FILTER,"some-other-field");
 
     HttpApiWriter writer = getHttpApiWriter(properties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
