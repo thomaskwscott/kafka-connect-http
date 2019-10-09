@@ -575,6 +575,91 @@ public class HttpApiWriterTest {
   }
 
   @Test
+  public void testStructValueUuidRemoval() throws Exception {
+
+    Map<String,String> properties = getProperties(RequestMethod.POST);
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+    properties.put(HttpSinkConfig.BATCH_BODY_UUID_FIELD_NAME,"id");
+
+    HttpApiWriter writer = getHttpApiWriter(properties);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+
+    Schema valueSchema = SchemaBuilder.struct()
+            .field("id", Schema.STRING_SCHEMA)
+            .field("name", Schema.OPTIONAL_STRING_SCHEMA)
+            .build();
+
+    Struct structData = new Struct(valueSchema)
+            .put("id", "fake-user-id")
+            .put("name", "John Smith");
+
+    sinkRecords.add(new SinkRecord("user-topic",0,null,"fake-user-id",valueSchema, structData,0));
+    writer.write(sinkRecords);
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("fake-user-id{\"name\":\"John Smith\"}user-topic")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authorization:Bearer aaa.bbb.ccc",
+                    "Cache-Control:no-cache");
+
+  }
+
+  @Test
+  public void testStructValueUuidRemovalNoField() throws Exception {
+
+    Map<String,String> properties = getProperties(RequestMethod.POST);
+    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+    properties.put(HttpSinkConfig.BATCH_BODY_UUID_FIELD_NAME,"some-other-field");
+
+    HttpApiWriter writer = getHttpApiWriter(properties);
+    List<SinkRecord> sinkRecords = new ArrayList<>();
+
+    Schema valueSchema = SchemaBuilder.struct()
+            .field("id", Schema.STRING_SCHEMA)
+            .field("name", Schema.OPTIONAL_STRING_SCHEMA)
+            .build();
+
+    Struct structData = new Struct(valueSchema)
+            .put("id", "fake-user-id")
+            .put("name", "John Smith");
+
+    sinkRecords.add(new SinkRecord("user-topic",0,null,"fake-user-id",valueSchema, structData,0));
+    writer.write(sinkRecords);
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+
+
+    assertThat(capturedRequests.get(1))
+            .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+            .hasUrl(endPoint)
+            .hasBody("fake-user-id{\"id\":\"fake-user-id\",\"name\":\"John Smith\"}user-topic")
+            .hasHeaders(
+                    "Content-Type:application/json",
+                    "Authorization:Bearer aaa.bbb.ccc",
+                    "Cache-Control:no-cache");
+
+  }
+
+
+  @Test
   public void canAddBatchBodyPrefix() throws Exception {
     String bodyPrefix = "\"method\" : \"PATCH\",";
     canAddBatchBodyAffix(HttpSinkConfig.BATCH_BODY_PREFIX, bodyPrefix);

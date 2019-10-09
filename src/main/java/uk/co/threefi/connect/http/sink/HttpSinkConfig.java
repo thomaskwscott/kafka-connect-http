@@ -124,6 +124,12 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String BATCH_BODY_SUFFIX_DOC = "Suffix for the body of the payload being sent";
     private static final String BATCH_BODY_SUFFIX_DISPLAY = "Batch body suffix";
 
+    public static final String BATCH_BODY_UUID_FIELD_NAME = "batch.body.uuid.field.name";
+    private static final String BATCH_BODY_UUID_FIELD_NAME_DEFAULT = "";
+    private static final String BATCH_BODY_UUID_FIELD_NAME_DOC = "The name of the UUID filed that is included " +
+            "in the batch.body.prefix but should be removed from the body of each sub-request.";
+    private static final String BATCH_BODY_UUID_FIELD_NAME_DISPLAY = "Batch body UUID field name";
+
     public static final String CONNECTION_GROUP = "Connection";
     private static final String RETRIES_GROUP = "Retries";
     private static final String REGEX_GROUP = "Regex";
@@ -356,6 +362,17 @@ public class HttpSinkConfig extends AbstractConfig {
                    BATCH_BODY_SUFFIX_DISPLAY
             )
             .define(
+                    BATCH_BODY_UUID_FIELD_NAME,
+                    ConfigDef.Type.STRING,
+                    BATCH_BODY_UUID_FIELD_NAME_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    BATCH_BODY_UUID_FIELD_NAME_DOC,
+                    BATCHING_GROUP,
+                    7,
+                    ConfigDef.Width.LONG,
+                    BATCH_BODY_UUID_FIELD_NAME_DISPLAY
+            )
+            .define(
                     SALESFORCE_AUTHENTICATION_ROOT,
                     ConfigDef.Type.STRING,
                     SALESFORCE_AUTHENTICATION_ROOT_DEFAULT,
@@ -416,6 +433,7 @@ public class HttpSinkConfig extends AbstractConfig {
     public String batchSeparator;
     public String batchBodyPrefix;
     public String batchBodySuffix;
+    public String batchBodyUuidFieldName;
     public int batchMaxSize;
     public final String salesforceAuthenticationRoot;
     public final String salesforceAuthenticationClientId;
@@ -441,6 +459,7 @@ public class HttpSinkConfig extends AbstractConfig {
         batchSeparator = getString(BATCH_SEPARATOR);
         batchBodyPrefix = getString(BATCH_BODY_PREFIX);
         batchBodySuffix = getString(BATCH_BODY_SUFFIX);
+        batchBodyUuidFieldName = getString(BATCH_BODY_UUID_FIELD_NAME);
         salesforceAuthenticationRoot = getString(SALESFORCE_AUTHENTICATION_ROOT);
         salesforceAuthenticationClientId = getString(SALESFORCE_AUTHENTICATION_CLIENT_ID);
         salesforceAuthenticationUsername = getString(SALESFORCE_AUTHENTICATION_USERNAME);

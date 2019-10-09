@@ -16,6 +16,7 @@
 package uk.co.threefi.connect.http.sink;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.security.KeyFactory;
@@ -207,9 +208,10 @@ public class HttpApiWriter {
         return record.key() == null ? StringUtils.EMPTY : StringUtils.trim(record.key().toString());
     }
 
-    private static String buildJsonFromStruct(Struct struct) {
+    private String buildJsonFromStruct(Struct struct) {
         JsonNode jsonNode = new SimpleJsonConverter().fromConnectData(struct.schema(), struct);
         stripNulls(jsonNode);
+        ((ObjectNode) jsonNode).remove(httpSinkConfig.batchBodyUuidFieldName);
         return jsonNode.toString();
     }
 
