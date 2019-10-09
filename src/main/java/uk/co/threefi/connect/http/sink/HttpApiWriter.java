@@ -219,17 +219,4 @@ public class HttpApiWriter {
         }
     }
 
-//    private void filterOutFields(JsonNode node) {
-//        Collection = new Collections(httpSinkConfig.batchBodyFieldFilter)
-//        Set set = new HashSet(httpSinkConfig.batchBodyFieldFilter);
-//        Iterator<JsonNode> it = node.iterator();
-//        while (it.hasNext()) {
-//            JsonNode child = it.next();
-//            if (child.) {
-//                it.remove();
-//            } else {
-//                stripNulls(child);
-//            }
-//        }
-//    }
 }
