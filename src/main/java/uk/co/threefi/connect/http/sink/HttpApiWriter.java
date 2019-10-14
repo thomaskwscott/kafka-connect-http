@@ -25,7 +25,15 @@ import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Clock;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -42,12 +50,13 @@ import uk.co.threefi.connect.http.util.SimpleJsonConverter;
 
 public class HttpApiWriter {
 
+    private static final String HEADER_VALUE_SEPARATOR = ":";
+
     private final JavaNetHttpClient httpClient;
     private final KafkaClient kafkaClient;
     private final HttpSinkConfig httpSinkConfig;
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
-    private static final String HEADER_VALUE_SEPARATOR = ":";
 
     HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig)
           throws Exception {
@@ -75,18 +84,6 @@ public class HttpApiWriter {
         kafkaClient = new KafkaClient(producerConfig, null, valueSerializer);
     }
 
-    private PrivateKey extractPrivateKeyFromConfig(HttpSinkConfig config)
-          throws InvalidKeySpecException, NoSuchAlgorithmException {
-        byte[] keyBytes = Base64.getDecoder()
-              .decode(config.salesforceAuthenticationPrivateKey
-                    .replaceAll("-----BEGIN PRIVATE KEY-----", "")
-                    .replaceAll("-----END PRIVATE KEY-----", "")
-                    .replaceAll("\\s+", "")
-                    .getBytes());
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-        return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
-    }
-
     public void write(final Collection<SinkRecord> records)
           throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
@@ -108,6 +105,18 @@ public class HttpApiWriter {
             }
         }
         flushBatches();
+    }
+
+    private PrivateKey extractPrivateKeyFromConfig(HttpSinkConfig config)
+          throws InvalidKeySpecException, NoSuchAlgorithmException {
+        byte[] keyBytes = Base64.getDecoder()
+              .decode(config.salesforceAuthenticationPrivateKey
+                    .replaceAll("-----BEGIN PRIVATE KEY-----", StringUtils.EMPTY)
+                    .replaceAll("-----END PRIVATE KEY-----", StringUtils.EMPTY)
+                    .replaceAll("\\s+", "")
+                    .getBytes());
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+        return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
     private void flushBatches()
@@ -132,9 +141,10 @@ public class HttpApiWriter {
         // add headers
         Map<String, String> headers = Arrays
               .stream(httpSinkConfig.headers.split(httpSinkConfig.headerSeparator))
-              .filter((s) -> s.contains(HEADER_VALUE_SEPARATOR))
-              .map((s) -> s.split(HEADER_VALUE_SEPARATOR))
-              .collect(Collectors.toMap((s) -> s[0], (s) -> s[1]));
+              .filter(header -> header.contains(HEADER_VALUE_SEPARATOR))
+              .map(header -> header.split(HEADER_VALUE_SEPARATOR))
+              .collect(
+                    Collectors.toMap(splitHeader -> splitHeader[0], splitHeader -> splitHeader[1]));
 
         String body = records.stream()
               .map(this::buildRecord)

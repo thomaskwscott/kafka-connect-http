@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -45,14 +46,16 @@ import uk.co.threefi.connect.http.HttpResponse;
 import uk.co.threefi.connect.http.sink.HttpSinkConfig.RequestMethod;
 
 public class HttpApiWriterTest {
+
   private static final String PRIVATE_KEY = Base64.getEncoder()
           .encodeToString(Keys.keyPairFor(SignatureAlgorithm.RS256).getPrivate().getEncoded());
   private static final String SALESFORCE_LOGIN_URL = "/services/oauth2/token";
-  private final RestHelper restHelper = new RestHelper();
   private static final Pattern TOKEN_REQUEST_PATTERN =
           Pattern.compile("^grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=.*$");
-
+  private static final String DEFAULT_TOPIC = "user-topic";
   private final String endPoint = "/test";
+
+  private final RestHelper restHelper = new RestHelper();
 
   @ClassRule
   public static final SharedKafkaTestResource kafkaTestHelper = new SharedKafkaTestResource();
@@ -557,7 +560,8 @@ public class HttpApiWriterTest {
             .put("id", "fake-user-id")
             .put("name", null);
 
-    sinkRecords.add(new SinkRecord("user-topic",0,null,"fake-user-id",valueSchema, structData,0));
+    sinkRecords.add(
+          new SinkRecord(DEFAULT_TOPIC, 0, null, "fake-user-id", valueSchema, structData, 0));
     writer.write(sinkRecords);
 
     List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
@@ -566,7 +570,7 @@ public class HttpApiWriterTest {
     assertThat(capturedRequests.get(1))
             .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
             .hasUrl(endPoint)
-            .hasBody("fake-user-id{\"id\":\"fake-user-id\"}user-topic")
+            .hasBody("fake-user-id{\"id\":\"fake-user-id\"}"+ DEFAULT_TOPIC)
             .hasHeaders(
                     "Content-Type:application/json",
                     "Authorization:Bearer aaa.bbb.ccc",
@@ -601,7 +605,7 @@ public class HttpApiWriterTest {
             .put("name", "John Smith")
             .put("test", "To be removed");
 
-    sinkRecords.add(new SinkRecord("user-topic",0,null,"fake-user-id",valueSchema, structData,0));
+    sinkRecords.add(new SinkRecord(DEFAULT_TOPIC,0,null,"fake-user-id",valueSchema, structData,0));
     writer.write(sinkRecords);
 
     List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
@@ -610,7 +614,7 @@ public class HttpApiWriterTest {
     assertThat(capturedRequests.get(1))
             .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
             .hasUrl(endPoint)
-            .hasBody("fake-user-id{\"name\":\"John Smith\"}user-topic")
+            .hasBody("fake-user-id{\"name\":\"John Smith\"}" + DEFAULT_TOPIC)
             .hasHeaders(
                     "Content-Type:application/json",
                     "Authorization:Bearer aaa.bbb.ccc",
@@ -643,7 +647,7 @@ public class HttpApiWriterTest {
             .put("id", "fake-user-id")
             .put("name", "John Smith");
 
-    sinkRecords.add(new SinkRecord("user-topic",0,null,"fake-user-id",valueSchema, structData,0));
+    sinkRecords.add(new SinkRecord(DEFAULT_TOPIC,0,null,"fake-user-id",valueSchema, structData,0));
     writer.write(sinkRecords);
 
     List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
@@ -652,12 +656,50 @@ public class HttpApiWriterTest {
     assertThat(capturedRequests.get(1))
             .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
             .hasUrl(endPoint)
-            .hasBody("fake-user-id{\"id\":\"fake-user-id\",\"name\":\"John Smith\"}user-topic")
+            .hasBody("fake-user-id{\"id\":\"fake-user-id\",\"name\":\"John Smith\"}" + DEFAULT_TOPIC)
             .hasHeaders(
                     "Content-Type:application/json",
                     "Authorization:Bearer aaa.bbb.ccc",
                     "Cache-Control:no-cache");
 
+  }
+
+  @Test
+  public void canProcessMultipleKeysAndRecords() throws Exception {
+    Map<String,String> properties = getProperties(RequestMethod.POST);
+    properties.put("batch.max.size", "4");
+    HttpApiWriter writer = getHttpApiWriter(properties);
+    List<SinkRecord> sinkRecords = createSinkRecords(6);
+    writer.write(sinkRecords);
+
+    List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
+    commonAssert(capturedRequests, 3);
+
+    String firstBody = sinkRecords.stream()
+          .filter(sinkRecord -> sinkRecord.value().toString().matches(".+[1-4]"))
+          .map(sinkRecord -> sinkRecord.value().toString())
+          .collect(Collectors.joining(","));
+
+    String secondBody = sinkRecords.stream()
+          .filter(sinkRecord -> sinkRecord.value().toString().matches(".+[5-6]"))
+          .map(sinkRecord -> sinkRecord.value().toString())
+          .collect(Collectors.joining(","));
+
+    assertThat(capturedRequests.get(1))
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody(firstBody)
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc");
+
+    assertThat(capturedRequests.get(2))
+          .hasMethod(HttpSinkConfig.RequestMethod.POST.toString())
+          .hasUrl(endPoint)
+          .hasBody(secondBody)
+          .hasHeaders(
+                "Content-Type:application/json",
+                "Authorization:Bearer aaa.bbb.ccc");
   }
 
 
