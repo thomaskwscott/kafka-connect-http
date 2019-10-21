@@ -61,7 +61,8 @@ public class SalesforceAuthenticationProvider implements AuthenticationProvider 
             throw new IOException(String.format("Request to %s/services/oauth2/token returned %s.",
                     salesforceAuthRootUrl, response));
         }
-        log.info("Successful login with response {}.", response);
+        log.info("Successful login to SF API.");
+        log.debug("Login response: {}", response);
         JsonObject jsonBody = new JsonParser().parse(response.getBody()).getAsJsonObject();
         return new BearerToken(jsonBody.get("access_token").getAsString(),
                 requestedExpiry.minusSeconds(5));

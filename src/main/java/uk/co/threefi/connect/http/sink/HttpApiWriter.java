@@ -151,7 +151,7 @@ public class HttpApiWriter {
               .collect(Collectors.joining(httpSinkConfig.batchSeparator, httpSinkConfig.batchPrefix,
                     httpSinkConfig.batchSuffix));
 
-        log.info("Submitting payload: {} to url: {}", body, formattedUrl);
+        log.debug("Submitting payload: {} to url: {}", body, formattedUrl);
         Response response = httpClient
               .makeRequest(requestMethod.toString(), formattedUrl, headers, body);
 
@@ -159,7 +159,7 @@ public class HttpApiWriter {
         batches.remove(formattedKeyPattern);
 
         // handle failed response
-        log.debug("Received Response: " + response.toString());
+        log.debug("Received Response: {}", response);
         if (!HttpUtil.isResponseSuccessful(response)) {
             throw new IOException(String.format(
                   "HTTP Response code: %s %s %s, Submitted payload: %s, url: %s",
