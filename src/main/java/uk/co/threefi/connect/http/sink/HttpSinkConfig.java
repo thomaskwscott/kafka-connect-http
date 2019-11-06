@@ -135,6 +135,7 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String REGEX_GROUP = "Regex";
     private static final String BATCHING_GROUP = "Batching";
     private static final String SALESFORCE_AUTH_GROUP = "Salesforce Auth";
+    private static final String CONVERTER_GROUP = "Converters";
 
     public static final String SALESFORCE_AUTHENTICATION_ROOT = "salesforce.authentication.root";
     private static final String SALESFORCE_AUTHENTICATION_ROOT_DEFAULT = "https://test.salesforce.com";
@@ -162,6 +163,46 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String RESPONSE_TOPIC_DISPLAY = "Response Topic";
     public static final String RESPONSE_PRODUCER = "response.producer.";
 
+    public static final String RESPONSE_BODY = "response.body";
+    private static final String RESPONSE_BODY_DEFAULT = "";
+    private static final String RESPONSE_BODY_DOC = "The name for the body to be found in a response";
+    private static final String RESPONSE_BODY_DISPLAY = "Response Body";
+
+    public static final String ERROR_TOPIC = "error.topic";
+    private static final String ERROR_TOPIC_DEFAULT = "";
+    private static final String ERROR_TOPIC_DOC = "The error topic to hold all error cases from the application";
+    private static final String ERROR_TOPIC_DISPLAY = "Error Topic";
+    public static final String ERROR_PRODUCER = "error.producer.";
+
+    public static final String ERROR_BATCH_RESPONSE_STATUS_CODE = "error.batch.response.status_code";
+    private static final String ERROR_BATCH_RESPONSE_STATUS_CODE_DEFAULT = "";
+    private static final String ERROR_BATCH_RESPONSE_STATUS_CODE_DOC = "The name for the status code to be found in a batch error response";
+    private static final String ERROR_BATCH_RESPONSE_STATUS_CODE_DISPLAY = "Error Batch Response Status Code";
+
+    public static final String ERROR_BATCH_RESPONSE_KEY = "error.batch.response.key";
+    private static final String ERROR_BATCH_RESPONSE_KEY_DEFAULT = "";
+    private static final String ERROR_BATCH_RESPONSE_KEY_DOC = "The name for the key to be found in a batch error response";
+    private static final String ERROR_BATCH_RESPONSE_KEY_DISPLAY = "Error Batch Response Key";
+
+    public static final String ERROR_BATCH_RESPONSE_BODY = "error.batch.response.body";
+    private static final String ERROR_BATCH_RESPONSE_BODY_DEFAULT = "";
+    private static final String ERROR_BATCH_RESPONSE_BODY_DOC = "The name for the body to be found in a batch error response";
+    private static final String ERROR_BATCH_RESPONSE_BODY_DISPLAY = "Error Batch Response Body";
+
+    public static final String KEY_CONVERTER = "key.converter";
+    private static final String KEY_CONVERTER_DEFAULT = "org.apache.kafka.connect.storage.StringConverter";
+    private static final String KEY_CONVERTER_DOC = "The key converter JAVA class";
+    private static final String KEY_CONVERTER_DISPLAY = "Key converter class";
+
+    public static final String VALUE_CONVERTER = "value.converter";
+    private static final String VALUE_CONVERTER_DEFAULT = "org.apache.kafka.connect.storage.StringConverter";
+    private static final String VALUE_CONVERTER_DOC = "The value converter JAVA class";
+    private static final String VALUE_CONVERTER_DISPLAY = "Value converter class";
+
+    public static final String VALUE_CONVERTER_SR_URL = "value.converter.schema.registry.url";
+    private static final String VALUE_CONVERTER_SR_URL_DEFAULT = "";
+    private static final String VALUE_CONVERTER_SR_URL_DOC = "The URL of the schema registry for the Value Converter";
+    private static final String VALUE_CONVERTER_SR_URL_DISPLAY = "Value Converter Schema Registry URL";
 
 
     private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
@@ -250,6 +291,61 @@ public class HttpSinkConfig extends AbstractConfig {
                     5,
                     Width.LONG,
                     RESPONSE_TOPIC_DISPLAY
+            )
+            .define(
+                  RESPONSE_BODY,
+                  ConfigDef.Type.STRING,
+                  RESPONSE_BODY_DEFAULT,
+                  Importance.LOW,
+                  RESPONSE_BODY_DOC,
+                  CONNECTION_GROUP,
+                  6,
+                  Width.LONG,
+                  RESPONSE_BODY_DISPLAY
+            )
+            .define(
+                    ERROR_TOPIC,
+                    ConfigDef.Type.STRING,
+                    ERROR_TOPIC_DEFAULT,
+                    Importance.LOW,
+                    ERROR_TOPIC_DOC,
+                    CONNECTION_GROUP,
+                    6,
+                    Width.LONG,
+                    ERROR_TOPIC_DISPLAY
+            )
+            .define(
+                  ERROR_BATCH_RESPONSE_STATUS_CODE,
+                  ConfigDef.Type.STRING,
+                  ERROR_BATCH_RESPONSE_STATUS_CODE_DEFAULT,
+                  Importance.LOW,
+                  ERROR_BATCH_RESPONSE_STATUS_CODE_DOC,
+                  CONNECTION_GROUP,
+                  7,
+                  Width.LONG,
+                  ERROR_BATCH_RESPONSE_STATUS_CODE_DISPLAY
+            )
+            .define(
+                  ERROR_BATCH_RESPONSE_KEY,
+                  ConfigDef.Type.STRING,
+                  ERROR_BATCH_RESPONSE_KEY_DEFAULT,
+                  Importance.LOW,
+                  ERROR_BATCH_RESPONSE_KEY_DOC,
+                  CONNECTION_GROUP,
+                  8,
+                  Width.LONG,
+                  ERROR_BATCH_RESPONSE_KEY_DISPLAY
+            )
+            .define(
+                  ERROR_BATCH_RESPONSE_BODY,
+                  ConfigDef.Type.STRING,
+                  ERROR_BATCH_RESPONSE_BODY_DEFAULT,
+                  Importance.LOW,
+                  ERROR_BATCH_RESPONSE_BODY_DOC,
+                  CONNECTION_GROUP,
+                  9,
+                  Width.LONG,
+                  ERROR_BATCH_RESPONSE_BODY_DISPLAY
             )
             .define(
                     REGEX_PATTERNS,
@@ -415,6 +511,39 @@ public class HttpSinkConfig extends AbstractConfig {
                     4,
                     ConfigDef.Width.MEDIUM,
                     SALESFORCE_AUTHENTICATION_PRIVATE_KEY_DISPLAY
+            )
+            .define(
+                    KEY_CONVERTER,
+                    ConfigDef.Type.STRING,
+                    KEY_CONVERTER_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    KEY_CONVERTER_DOC,
+                    CONVERTER_GROUP,
+                    1,
+                    ConfigDef.Width.MEDIUM,
+                    KEY_CONVERTER_DISPLAY
+            )
+            .define(
+                    VALUE_CONVERTER,
+                    ConfigDef.Type.STRING,
+                    VALUE_CONVERTER_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    VALUE_CONVERTER_DOC,
+                    CONVERTER_GROUP,
+                    2,
+                    ConfigDef.Width.MEDIUM,
+                    VALUE_CONVERTER_DISPLAY
+            )
+            .define(
+                    VALUE_CONVERTER_SR_URL,
+                    ConfigDef.Type.STRING,
+                    VALUE_CONVERTER_SR_URL_DEFAULT,
+                    ConfigDef.Importance.HIGH,
+                    VALUE_CONVERTER_SR_URL_DOC,
+                    CONVERTER_GROUP,
+                    3,
+                    ConfigDef.Width.MEDIUM,
+                    VALUE_CONVERTER_SR_URL_DISPLAY
             );
 
     public final String httpApiUrl;
@@ -424,6 +553,11 @@ public class HttpSinkConfig extends AbstractConfig {
     public String headers;
     public String headerSeparator;
     public String responseTopic;
+    public String responseBody;
+    public String errorTopic;
+    public String errorBatchResponseStatusCode;
+    public String errorBatchResponseKey;
+    public String errorBatchResponseBody;
     public String regexPatterns;
     public String regexReplacements;
     public String regexSeparator;
@@ -439,6 +573,9 @@ public class HttpSinkConfig extends AbstractConfig {
     public final String salesforceAuthenticationClientId;
     public final String salesforceAuthenticationUsername;
     public final String salesforceAuthenticationPrivateKey;
+    public static String keyConverterClassName;
+    public static String valueConverterClassName;
+    public static String valueConverterSchemaRegistryUrl;
 
     public HttpSinkConfig(Map<?, ?> props) {
         super(CONFIG_DEF, props);
@@ -449,6 +586,11 @@ public class HttpSinkConfig extends AbstractConfig {
         headers = getString(HEADERS);
         headerSeparator = getString(HEADER_SEPERATOR);
         responseTopic = getString(RESPONSE_TOPIC);
+        responseBody = getString(RESPONSE_BODY);
+        errorTopic = getString(ERROR_TOPIC);
+        errorBatchResponseStatusCode = getString(ERROR_BATCH_RESPONSE_STATUS_CODE);
+        errorBatchResponseKey = getString(ERROR_BATCH_RESPONSE_KEY);
+        errorBatchResponseBody = getString(ERROR_BATCH_RESPONSE_BODY);
         regexPatterns = getString(REGEX_PATTERNS);
         regexReplacements = getString(REGEX_REPLACEMENTS);
         regexSeparator = getString(REGEX_SEPARATOR);
@@ -464,6 +606,9 @@ public class HttpSinkConfig extends AbstractConfig {
         salesforceAuthenticationClientId = getString(SALESFORCE_AUTHENTICATION_CLIENT_ID);
         salesforceAuthenticationUsername = getString(SALESFORCE_AUTHENTICATION_USERNAME);
         salesforceAuthenticationPrivateKey = getString(SALESFORCE_AUTHENTICATION_PRIVATE_KEY);
+        keyConverterClassName = getString(KEY_CONVERTER);
+        valueConverterClassName = getString(VALUE_CONVERTER);
+        valueConverterSchemaRegistryUrl = getString(VALUE_CONVERTER_SR_URL);
     }
 
 

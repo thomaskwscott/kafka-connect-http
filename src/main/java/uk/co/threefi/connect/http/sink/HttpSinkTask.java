@@ -15,48 +15,55 @@
 
 package uk.co.threefi.connect.http.sink;
 
+import static uk.co.threefi.connect.http.sink.HttpSinkConfig.ERROR_PRODUCER;
 import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.threefi.connect.http.util.ResponseErrorException;
 
 public class HttpSinkTask extends SinkTask {
   private static final Logger log = LoggerFactory.getLogger(HttpSinkTask.class);
 
-  HttpSinkConfig httpSinkConfig;
-  ProducerConfig producerConfig;
-  HttpApiWriter writer;
-  int remainingRetries;
+  private HttpSinkConfig httpSinkConfig;
+  private ProducerConfig responseProducerConfig;
+  private ProducerConfig errorProducerConfig;
+  protected HttpApiWriter writer;
+  private int remainingRetries;
+  protected ResponseHandler responseHandler;
 
   @Override
   public void start(final Map<String, String> props) {
     log.info("Starting task");
     httpSinkConfig = new HttpSinkConfig(props);
+    remainingRetries = httpSinkConfig.maxRetries;
 
-    Map<String, String> producerConfigProps = obtainProducerConfigProps(props);
-    producerConfig = new ProducerConfig(Collections.unmodifiableMap(producerConfigProps));
+    responseProducerConfig = obtainProducerConfig(props,RESPONSE_PRODUCER, new HashMap<>());
+    HashMap<String, String> customProducerProperties = getCustomErrorProducerProperties();
+    errorProducerConfig = obtainProducerConfig(props, ERROR_PRODUCER, customProducerProperties);
+
     try {
-      initWriter();
+      init();
     } catch (Exception e) {
       throw new ConnectException(e);
     }
-    remainingRetries = httpSinkConfig.maxRetries;
-  }
-
-  protected void initWriter() throws Exception {
-    writer = new HttpApiWriter(httpSinkConfig, producerConfig);
   }
 
   @Override
@@ -65,33 +72,20 @@ public class HttpSinkTask extends SinkTask {
       return;
     }
     final SinkRecord first = records.iterator().next();
-    final int recordsCount = records.size();
     log.trace(
         "Received {} records. First record kafka coordinates:({}-{}-{}). Writing them to the "
         + "API...",
-        recordsCount, first.topic(), first.kafkaPartition(), first.kafkaOffset()
+          records.size(), first.topic(), first.kafkaPartition(), first.kafkaOffset()
     );
+    Set<ResponseError> responseErrors = new HashSet<>();
     try {
-      writer.write(records);
-    } catch (Exception e) {
-      log.warn(
-          "Write of {} records failed, remainingRetries={}",
-          records.size(),
-          remainingRetries,
-          e
-      );
-      if (remainingRetries == 0) {
-        throw new ConnectException(e);
-      } else {
-        try {
-          initWriter();
-        } catch (Exception ex) {
-          throw new ConnectException(e);
-        }
-        remainingRetries--;
-        context.timeout(httpSinkConfig.retryBackoffMs);
-        throw new RetriableException(e);
+      responseErrors = writer.write(records);
+      if (!responseErrors.isEmpty()) {
+        throw new ResponseErrorException("Errors found in Http Response");
       }
+    } catch (Exception exception) {
+      retry(records, exception);
+      responseHandler.handleErrors(records, responseErrors);
     }
     remainingRetries = httpSinkConfig.maxRetries;
   }
@@ -110,12 +104,54 @@ public class HttpSinkTask extends SinkTask {
     return getClass().getPackage().getImplementationVersion();
   }
 
-  private Map<String, String> obtainProducerConfigProps(Map<String, String> props) {
+  protected void init() throws Exception {
+    responseHandler = new ResponseHandler(httpSinkConfig, responseProducerConfig,
+          errorProducerConfig);
+    writer = new HttpApiWriter(responseHandler);
+  }
+
+  private void retry(
+        Collection<SinkRecord> records, Exception exception) {
+    log.warn(
+          "Write of {} records failed, remainingRetries={}",
+          records.size(),
+          remainingRetries,
+          exception
+    );
+    if (remainingRetries > 0) {
+      try {
+        init();
+      } catch (Exception ex) {
+        throw new ConnectException(exception);
+      }
+      remainingRetries--;
+      context.timeout(httpSinkConfig.retryBackoffMs);
+      throw new RetriableException(exception);
+    }
+  }
+
+  private HashMap<String, String> getCustomErrorProducerProperties() {
+    HashMap<String,String> customProducerProperties = new HashMap<>();
+    customProducerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+          ByteArraySerializer.class.getName());
+    customProducerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+          ByteArraySerializer.class.getName());
+    return customProducerProperties;
+  }
+
+  private Map<String, String> obtainProducerConfigProps(Map<String, String> props,
+        String producerType) {
     return props.entrySet().stream()
-          .filter(entry -> entry.getKey().startsWith(RESPONSE_PRODUCER))
+          .filter(entry -> entry.getKey().startsWith(producerType))
           .collect(Collectors.toMap(
-                entry -> entry.getKey().replaceFirst(RESPONSE_PRODUCER, ""),
+                entry -> entry.getKey().replaceFirst(producerType, StringUtils.EMPTY),
                 Entry::getValue));
   }
 
+  private ProducerConfig obtainProducerConfig(Map<String, String> props, String producerType,
+        Map<String,String> customProperties) {
+    Map<String, String> producerConfigProperties = obtainProducerConfigProps(props, producerType);
+    producerConfigProperties.putAll(customProperties);
+    return new ProducerConfig(Collections.unmodifiableMap(producerConfigProperties));
+  }
 }

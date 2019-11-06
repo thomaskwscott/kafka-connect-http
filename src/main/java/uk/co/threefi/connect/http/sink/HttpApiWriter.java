@@ -15,9 +15,9 @@
 
 package uk.co.threefi.connect.http.sink;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import static uk.co.threefi.connect.http.util.DataUtils.buildJsonFromStruct;
+import static uk.co.threefi.connect.http.util.DataUtils.getKey;
+
 import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -31,21 +31,18 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.threefi.connect.http.HttpResponse;
-import uk.co.threefi.connect.http.util.HttpUtil;
-import uk.co.threefi.connect.http.util.SimpleJsonConverter;
 
 
 public class HttpApiWriter {
@@ -53,20 +50,17 @@ public class HttpApiWriter {
     private static final String HEADER_VALUE_SEPARATOR = ":";
 
     private final JavaNetHttpClient httpClient;
-    private final KafkaClient kafkaClient;
     private final HttpSinkConfig httpSinkConfig;
     private static final Logger log = LoggerFactory.getLogger(HttpApiWriter.class);
     private Map<String, List<SinkRecord>> batches = new HashMap<>();
+    private final ResponseHandler responseHandler;
 
-    HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig)
+    public HttpApiWriter(final ResponseHandler responseHandler)
           throws Exception {
-        this(httpSinkConfig, producerConfig, null);
-    }
 
-    HttpApiWriter(final HttpSinkConfig httpSinkConfig, ProducerConfig producerConfig,
-          KafkaAvroSerializer valueSerializer)
-          throws Exception {
-        this.httpSinkConfig = httpSinkConfig;
+        this.httpSinkConfig = responseHandler.getHttpSinkConfig();
+        this.responseHandler = responseHandler;
+
         PayloadGenerator payloadGenerator = new PayloadGenerator(
               extractPrivateKeyFromConfig(httpSinkConfig),
               httpSinkConfig.salesforceAuthenticationClientId,
@@ -81,14 +75,13 @@ public class HttpApiWriter {
                     payloadGenerator);
 
         httpClient = new AuthenticatedJavaNetHttpClient(authenticationProvider);
-        kafkaClient = new KafkaClient(producerConfig, null, valueSerializer);
     }
 
-    public void write(final Collection<SinkRecord> records)
+    public Set<ResponseError> write(final Collection<SinkRecord> records)
           throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
+        Set<ResponseError> responseErrors = new HashSet<>();
         for (SinkRecord record : records) {
-
             // build batch key
             String formattedKeyPattern = evaluateReplacements(httpSinkConfig.batchKeyPattern,
                   record);
@@ -101,10 +94,11 @@ public class HttpApiWriter {
                 batches.get(formattedKeyPattern).add(record);
             }
             if (batches.get(formattedKeyPattern).size() >= httpSinkConfig.batchMaxSize) {
-                sendBatch(formattedKeyPattern);
+                responseErrors.addAll(sendBatchAndGetResponseErrors(formattedKeyPattern));
             }
         }
-        flushBatches();
+        responseErrors.addAll(flushBatches());
+        return responseErrors;
     }
 
     private PrivateKey extractPrivateKeyFromConfig(HttpSinkConfig config)
@@ -119,15 +113,17 @@ public class HttpApiWriter {
         return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
-    private void flushBatches()
-          throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    private Set<ResponseError> flushBatches()
+          throws InterruptedException, ExecutionException, TimeoutException, IOException {
         // send any outstanding batches
+        Set<ResponseError> responseErrors = new HashSet<>();
         for (Map.Entry<String, List<SinkRecord>> entry : batches.entrySet()) {
-            sendBatch(entry.getKey());
+            responseErrors.addAll(sendBatchAndGetResponseErrors(entry.getKey()));
         }
+        return responseErrors;
     }
 
-    private void sendBatch(String formattedKeyPattern)
+    private Set<ResponseError> sendBatchAndGetResponseErrors(String formattedKeyPattern)
           throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
         List<SinkRecord> records = batches.get(formattedKeyPattern);
@@ -157,31 +153,14 @@ public class HttpApiWriter {
 
         //clear batch
         batches.remove(formattedKeyPattern);
-
-        // handle failed response
         log.debug("Received Response: {}", response);
-        if (!HttpUtil.isResponseSuccessful(response)) {
-            throw new IOException(String.format(
-                  "HTTP Response code: %s %s %s, Submitted payload: %s, url: %s",
-                  response.getStatusCode(), response.getStatusMessage(), response.getBody(),
-                  body, formattedUrl));
-        }
         // Uses first key of batch as key
-        if (!httpSinkConfig.responseTopic.isEmpty()) {
-            HttpResponse httpResponse = new HttpResponse(
-                  response.getStatusCode(),
-                  formattedUrl,
-                  response.getStatusMessage() == null
-                        ? StringUtils.EMPTY
-                        : response.getStatusMessage(),
-                  response.getBody() == null ? StringUtils.EMPTY : response.getBody());
-            kafkaClient.publish(getKey(record), httpSinkConfig.responseTopic, httpResponse);
-        }
+        return responseHandler.processResponse(response, getKey(record), body, formattedUrl);
     }
 
     private String buildRecord(SinkRecord record) {
         String value = record.value() instanceof Struct
-              ? buildJsonFromStruct((Struct) record.value())
+              ? buildJsonFromStruct((Struct) record.value(), httpSinkConfig.batchBodyFieldFilter)
               : record.value().toString();
         value = httpSinkConfig.batchBodyPrefix + value + httpSinkConfig.batchBodySuffix;
 
@@ -205,28 +184,4 @@ public class HttpApiWriter {
               .replace("${key}", getKey(record))
               .replace("${topic}", record.topic());
     }
-
-    private String getKey(SinkRecord record) {
-        return record.key() == null ? StringUtils.EMPTY : StringUtils.trim(record.key().toString());
-    }
-
-    private String buildJsonFromStruct(Struct struct) {
-        JsonNode jsonNode = new SimpleJsonConverter().fromConnectData(struct.schema(), struct);
-        stripNulls(jsonNode);
-        ((ObjectNode) jsonNode).remove(httpSinkConfig.batchBodyFieldFilter);
-        return jsonNode.toString();
-    }
-
-    private static void stripNulls(JsonNode node) {
-        Iterator<JsonNode> it = node.iterator();
-        while (it.hasNext()) {
-            JsonNode child = it.next();
-            if (child.isNull()) {
-                it.remove();
-            } else {
-                stripNulls(child);
-            }
-        }
-    }
-
 }

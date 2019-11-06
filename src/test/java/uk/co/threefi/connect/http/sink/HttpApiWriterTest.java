@@ -24,16 +24,19 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -73,9 +76,11 @@ public class HttpApiWriterTest {
 
   @Test
   public void putWithPayloadAndHeaders() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.PUT);
+    Map<String, String> responseProducerProperties =
+          getResponseProducerProperties(RequestMethod.PUT);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -93,8 +98,9 @@ public class HttpApiWriterTest {
 
   @Test
   public void postWithPayloadAndHeaders() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -112,9 +118,9 @@ public class HttpApiWriterTest {
 
   @Test
   public void deleteWithPayloadAndHeaders() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.DELETE);
-
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.DELETE);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -130,25 +136,29 @@ public class HttpApiWriterTest {
                     "Authorization:Bearer aaa.bbb.ccc");
   }
 
-  @Test(expected = IOException.class)
-  public void canThrowExceptionOnUnsuccessfulResponse() throws Exception {
-    Map<String, String> properties = getProperties(RequestMethod.PUT);
-    properties.put(HttpSinkConfig.HTTP_API_URL,
+  @Test
+  public void canCreateResponseErrorOnUnsuccessfulResponse() throws Exception {
+    Map<String, String> responseProducerProperties = getResponseProducerProperties(RequestMethod.PUT);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HTTP_API_URL,
           "http://localhost:" + restHelper.getPort() + "/unauthorized");
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
-    writer.write(sinkRecords);
+    Set<ResponseError> responseErrors = writer.write(sinkRecords);
+    assertThat(responseErrors).hasSize(1);
+    assertThat(((ResponseError) responseErrors.toArray()[0]).getErrorMessage())
+          .isEqualTo("{\"status\":\"unauthorized\"}");
   }
 
   @Test
   public void canSendResponseOverKafka() throws Exception {
     final String responseTopic = "response.topic";
-
-    Map<String, String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.RESPONSE_TOPIC, responseTopic);
-    properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+    Map<String, String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    responseProducerProperties.put(HttpSinkConfig.RESPONSE_TOPIC, responseTopic);
+    responseProducerProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
           kafkaTestHelper.getKafkaConnectString());
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
 
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
@@ -173,9 +183,10 @@ public class HttpApiWriterTest {
 
   @Test
   public void multipleHeaders() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.DELETE);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json|Cache-Control:no-cache");
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.DELETE);
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json|Cache-Control:no-cache");
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -194,11 +205,11 @@ public class HttpApiWriterTest {
 
   @Test
   public void headerSeparator() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.DELETE);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.DELETE);
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -218,13 +229,13 @@ public class HttpApiWriterTest {
   @Test
   public void topicUrlSubstitution() throws Exception {
     String endPoint = "/${topic}";
-    Map<String, String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HTTP_API_URL,
+    Map<String, String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    responseProducerProperties.put(HttpSinkConfig.HTTP_API_URL,
           "http://localhost:" + restHelper.getPort() + endPoint);
-    properties.put(HttpSinkConfig.HEADERS, "Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR, "=");
-
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    responseProducerProperties.put(HttpSinkConfig.HEADERS, "Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR, "=");
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -244,13 +255,14 @@ public class HttpApiWriterTest {
   @Test
   public void keyUrlSubstitution() throws Exception {
     String endPoint = "/${key}";
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HTTP_API_URL,
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HTTP_API_URL,
           "http://localhost:" + restHelper.getPort() + endPoint);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -268,10 +280,11 @@ public class HttpApiWriterTest {
 
   @Test
   public void multipleRecordsMultipleRequests() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(2);
     writer.write(sinkRecords);
 
@@ -297,14 +310,15 @@ public class HttpApiWriterTest {
 
   @Test
   public void regexReplacement() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"start~end");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"start~end");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -322,14 +336,15 @@ public class HttpApiWriterTest {
 
   @Test
   public void regexReplacementWithKeyTopic() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -347,15 +362,16 @@ public class HttpApiWriterTest {
 
   @Test
   public void batchContainsPrefix() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_PREFIX,"batchPrefix");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_PREFIX,"batchPrefix");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -373,15 +389,16 @@ public class HttpApiWriterTest {
 
   @Test
   public void batchContainsSuffix() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_SUFFIX,"batchSuffix");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_SUFFIX,"batchSuffix");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
@@ -399,15 +416,16 @@ public class HttpApiWriterTest {
 
   @Test
   public void batchSentAtMaxSize() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(2);
     writer.write(sinkRecords);
 
@@ -425,15 +443,16 @@ public class HttpApiWriterTest {
 
   @Test
   public void batchesSplitByKeyPattern() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}-${key}");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}-${key}");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
     String payload1 = "someValue";
     sinkRecords.add(new SinkRecord("someTopic1",0,null,"someKey1",null, payload1,0));
@@ -463,16 +482,17 @@ public class HttpApiWriterTest {
 
   @Test
   public void batchesSplitByConstantKeyPattern() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
-    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"someKey");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"someKey");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
     String payload1 = "someValue";
     sinkRecords.add(new SinkRecord("someTopic1",0,null,"someKey1",null, payload1,0));
@@ -494,16 +514,17 @@ public class HttpApiWriterTest {
 
   @Test
   public void multipleBatchesSentAtMaxSize() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
-    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
     String payload1 = "someValue";
 
@@ -539,16 +560,17 @@ public class HttpApiWriterTest {
   @Test
   public void testStructValue() throws Exception {
 
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
-    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
 
     Schema valueSchema = SchemaBuilder.struct()
@@ -581,17 +603,18 @@ public class HttpApiWriterTest {
   @Test
   public void testStructValueRemoveList() throws Exception {
 
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
-    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
-    properties.put(HttpSinkConfig.BATCH_BODY_FIELD_FILTER,"id,test");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_BODY_FIELD_FILTER,"id,test");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
 
     Schema valueSchema = SchemaBuilder.struct()
@@ -625,17 +648,18 @@ public class HttpApiWriterTest {
   @Test
   public void testStructValueUuidRemovalNoField() throws Exception {
 
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
-    properties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
-    properties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
-    properties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
-    properties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
-    properties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
-    properties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
-    properties.put(HttpSinkConfig.BATCH_BODY_FIELD_FILTER,"some-other-field");
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put(HttpSinkConfig.HEADERS,"Content-Type:application/json=Cache-Control:no-cache");
+    responseProducerProperties.put(HttpSinkConfig.HEADER_SEPERATOR,"=");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_PATTERNS,"^~$");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_REPLACEMENTS,"${key}~${topic}");
+    responseProducerProperties.put(HttpSinkConfig.REGEX_SEPARATOR,"~");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_MAX_SIZE,"2");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_KEY_PATTERN,"${topic}");
+    responseProducerProperties.put(HttpSinkConfig.BATCH_BODY_FIELD_FILTER,"some-other-field");
 
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = new ArrayList<>();
 
     Schema valueSchema = SchemaBuilder.struct()
@@ -666,9 +690,10 @@ public class HttpApiWriterTest {
 
   @Test
   public void canProcessMultipleKeysAndRecords() throws Exception {
-    Map<String,String> properties = getProperties(RequestMethod.POST);
-    properties.put("batch.max.size", "4");
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String,String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    responseProducerProperties.put("batch.max.size", "4");
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(6);
     writer.write(sinkRecords);
 
@@ -716,16 +741,17 @@ public class HttpApiWriterTest {
   }
 
   private void canAddBatchBodyAffix(String configName, String affix) throws Exception {
-    Map<String, String> properties = getProperties(RequestMethod.POST);
-    properties.put(configName, affix);
-    HttpApiWriter writer = getHttpApiWriter(properties);
+    Map<String, String> responseProducerProperties = getResponseProducerProperties(RequestMethod.POST);
+    responseProducerProperties.put(configName, affix);
+    Map<String, String> errorProducerProperties = getErrorProducerProperties();
+    HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
     writer.write(sinkRecords);
 
     List<RequestInfo> capturedRequests = restHelper.getCapturedRequests();
     commonAssert(capturedRequests, 2);
 
-    String body = properties.containsKey(HttpSinkConfig.BATCH_BODY_PREFIX)
+    String body = responseProducerProperties.containsKey(HttpSinkConfig.BATCH_BODY_PREFIX)
           ? affix + sinkRecords.get(0).value()
           : sinkRecords.get(0).value() + affix;
 
@@ -738,26 +764,40 @@ public class HttpApiWriterTest {
                 "Authorization:Bearer aaa.bbb.ccc");
   }
 
-  private Map<String, String> getProperties(RequestMethod requestMethod) {
-    int port = restHelper.getPort();
-    String testUrl = "http://localhost:" + port + endPoint;
+  private Map<String, String> getResponseProducerProperties(RequestMethod requestMethod) {
+    Map<String, String> responseProducerProperties = getCommonProperties(requestMethod);
+    responseProducerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+          StringSerializer.class.getName());
+    responseProducerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+          KafkaAvroSerializer.class.getName());
+    return responseProducerProperties;
+  }
 
-    Map<String, String> properties = new HashMap<>();
-    properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
-    properties.put(HttpSinkConfig.REQUEST_METHOD, requestMethod.toString());
-    properties.put(HttpSinkConfig.HEADERS, "Content-Type:application/json");
-    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
-    properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT,
-          String.format("http://localhost:%s", restHelper.getPort()));
+  private Map<String, String> getErrorProducerProperties() {
+    Map<String, String> errorProducerProperties = getCommonProperties(RequestMethod.POST);
+    errorProducerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+          ByteArraySerializer.class.getName());
+    errorProducerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+          ByteArraySerializer.class.getName());
+    return errorProducerProperties;
+  }
 
-    properties.put(ProducerConfig.RETRIES_CONFIG, "1");
-    properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://localhost:9092");
-    properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-          "org.apache.kafka.common.serialization.StringSerializer");
-    properties
-          .put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class.getName());
-    properties.put("schema.registry.url","http://localhost:8081");
-    return properties;
+  private Map<String, String> getCommonProperties(RequestMethod requestMethod) {
+      int port = restHelper.getPort();
+      String testUrl = "http://localhost:" + port + endPoint;
+
+      Map<String, String> properties = new HashMap<>();
+      properties.put(HttpSinkConfig.HTTP_API_URL, testUrl);
+      properties.put(HttpSinkConfig.REQUEST_METHOD, requestMethod.toString());
+      properties.put(HttpSinkConfig.HEADERS, "Content-Type:application/json");
+      properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_PRIVATE_KEY, PRIVATE_KEY);
+      properties.put(HttpSinkConfig.SALESFORCE_AUTHENTICATION_ROOT,
+            String.format("http://localhost:%s", restHelper.getPort()));
+
+      properties.put(ProducerConfig.RETRIES_CONFIG, "1");
+      properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://localhost:9092");
+      properties.put("schema.registry.url", "http://localhost:8081");
+      return properties;
   }
 
   private List<SinkRecord> createSinkRecords(int records) {
@@ -771,19 +811,34 @@ public class HttpApiWriterTest {
     return sinkRecords;
   }
 
-  private HttpApiWriter getHttpApiWriter(Map<String, String> properties) throws Exception {
-    HttpSinkConfig config = new HttpSinkConfig(properties);
-    ProducerConfig producerConfig = new ProducerConfig(Collections.unmodifiableMap(properties));
+  private HttpApiWriter getHttpApiWriter(Map<String, String> responseProducerProperties,
+        Map<String, String> errorProducerProperties) throws Exception {
+
+    HttpSinkConfig httpSinkConfig = new HttpSinkConfig(responseProducerProperties);
+    ProducerConfig responseProducerConfig =
+          new ProducerConfig(Collections.unmodifiableMap(responseProducerProperties));
+    ProducerConfig errorProducerConfig =
+          new ProducerConfig(Collections.unmodifiableMap(errorProducerProperties));
 
     Map<String, Object> serializerProperties = new HashMap<>();
-    serializerProperties.put(KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS, true);
+    serializerProperties.put(KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS, false);
     serializerProperties.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "nothing");
+
     MockSchemaRegistryClient mockSchemaRegistryClient = new MockSchemaRegistryClient();
     mockSchemaRegistryClient.register("response.topic-value", HttpResponse.getClassSchema());
+
     KafkaAvroSerializer serializer = new KafkaAvroSerializer(mockSchemaRegistryClient);
     serializer.configure(serializerProperties, false);
 
-    return new HttpApiWriter(config, producerConfig, serializer);
+    ResponseHandler responseHandler = new ResponseHandler(
+          httpSinkConfig,
+          responseProducerConfig,
+          errorProducerConfig,
+          Pair.of(null,serializer),
+          Pair.of(null,null)
+          );
+
+    return new HttpApiWriter(responseHandler);
   }
 
   private void commonAssert(List<RequestInfo> capturedRequests, int capturedRequestSize) {
