@@ -59,7 +59,7 @@ public class HttpApiWriter {
         this.httpSinkConfig = responseHandler.getHttpSinkConfig();
         this.responseHandler = responseHandler;
 
-        PayloadGenerator payloadGenerator = new PayloadGenerator(
+         PayloadGenerator payloadGenerator = new PayloadGenerator(
               extractPrivateKeyFromConfig(httpSinkConfig),
               httpSinkConfig.salesforceAuthenticationClientId,
               httpSinkConfig.salesforceAuthenticationUsername,

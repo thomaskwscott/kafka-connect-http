@@ -61,7 +61,12 @@ public class KafkaClientTest {
         KafkaAvroSerializer serializer = new KafkaAvroSerializer(mockSchemaRegistryClient);
         serializer.configure(serializerProperties, false);
 
-        KafkaClient kafkaClient = new KafkaClient(producerConfig, Pair.of(null, serializer));
+        Map<String, String> properties = new HashMap<>();
+        properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
+        HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
+
+        KafkaClient kafkaClient = new KafkaClient(producerConfig, httpSinkConfig,
+              Pair.of(null, serializer));
         kafkaClient.publish(key, responseTopic, httpResponse);
 
         assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics()).hasSize(1);
@@ -90,9 +95,6 @@ public class KafkaClientTest {
         ProducerConfig producerConfig = getProducerConfig(ByteArraySerializer.class,
               ByteArraySerializer.class);
 
-        Serializer serializer = new ByteArraySerializer();
-        KafkaClient kafkaClient = new KafkaClient(producerConfig, Pair.of(serializer, serializer));
-
         Map<String, String> properties = new HashMap<>();
         properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
         properties.put(HttpSinkConfig.KEY_CONVERTER, StringConverter.class.getName());
@@ -101,11 +103,15 @@ public class KafkaClientTest {
         properties.put(HttpSinkConfig.ERROR_TOPIC, errorTopic);
 
         HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
+        Serializer serializer = new ByteArraySerializer();
+        KafkaClient kafkaClient = new KafkaClient(producerConfig, httpSinkConfig,
+              Pair.of(serializer, serializer));
+
         SinkRecord sinkRecord = new SinkRecord(
               errorTopic, 0, null, "someKey", null
               , "someValue", 0);
         RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
-        kafkaClient.publishError(httpSinkConfig, retriableError);
+        kafkaClient.publishError(retriableError);
 
         assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics()).hasSize(1);
         assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics().get(0).name())
@@ -123,8 +129,6 @@ public class KafkaClientTest {
         ProducerConfig producerConfig = getProducerConfig(StringSerializer.class,
               StringSerializer.class);
 
-        KafkaClient kafkaClient = new KafkaClient(producerConfig);
-
         Map<String, String> properties = new HashMap<>();
         properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
         properties.put(HttpSinkConfig.KEY_CONVERTER, StringConverter.class.getName());
@@ -132,11 +136,13 @@ public class KafkaClientTest {
         properties.put(HttpSinkConfig.VALUE_CONVERTER_SR_URL, "http://localhost:8081");
 
         HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
+        KafkaClient kafkaClient = new KafkaClient(producerConfig,httpSinkConfig);
+
         SinkRecord sinkRecord = new SinkRecord(
               "topic", 0, null, "someKey", null
               , "someValue", 0);
         RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
-        kafkaClient.publishError(httpSinkConfig, retriableError);
+        kafkaClient.publishError(retriableError);
     }
 
     @Test(expected = ExecutionException.class)
@@ -155,7 +161,12 @@ public class KafkaClientTest {
         KafkaAvroSerializer serializer = new KafkaAvroSerializer(mockSchemaRegistryClient);
         serializer.configure(serializerProperties, false);
 
-        KafkaClient kafkaClient = new KafkaClient(producerConfig, Pair.of(null, serializer));
+        Map<String, String> properties = new HashMap<>();
+        properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
+        HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
+        
+        KafkaClient kafkaClient = new KafkaClient(producerConfig,httpSinkConfig,
+              Pair.of(null, serializer));
 
 
         for (KafkaBroker kafkaBroker : kafkaTestHelper.getKafkaBrokers()) {

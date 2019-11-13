@@ -42,15 +42,16 @@ public class ResponseHandler {
           Pair<Serializer<Object>, Serializer<Object>> responseSerializers,
           Pair<Serializer<Object>, Serializer<Object>> errorSerializers) {
         this.httpSinkConfig = httpSinkConfig;
-        responseKafkaClient = new KafkaClient(responseProducerConfig, responseSerializers);
-        errorKafkaClient = new KafkaClient(errorProducerConfig, errorSerializers);
+        responseKafkaClient = new KafkaClient(responseProducerConfig, httpSinkConfig,
+              responseSerializers);
+        errorKafkaClient = new KafkaClient(errorProducerConfig, httpSinkConfig, errorSerializers);
     }
 
     public ResponseHandler(HttpSinkConfig httpSinkConfig, ProducerConfig responseProducerConfig,
           ProducerConfig errorProducerConfig) {
         this.httpSinkConfig = httpSinkConfig;
-        responseKafkaClient = new KafkaClient(responseProducerConfig);
-        errorKafkaClient = new KafkaClient(errorProducerConfig);
+        responseKafkaClient = new KafkaClient(responseProducerConfig, httpSinkConfig);
+        errorKafkaClient = new KafkaClient(errorProducerConfig, httpSinkConfig);
     }
 
     public ResponseHandler(HttpSinkConfig httpSinkConfig, KafkaClient responseKafkaClient,
@@ -92,7 +93,7 @@ public class ResponseHandler {
 
     private void publishError(RetriableError retriableError) {
         try {
-            errorKafkaClient.publishError(httpSinkConfig, retriableError);
+            errorKafkaClient.publishError(retriableError);
         } catch (Exception e) {
             logger.error("Something failed while publishing error");
             throw new RuntimeException(e);

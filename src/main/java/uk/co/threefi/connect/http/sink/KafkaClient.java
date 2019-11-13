@@ -23,17 +23,33 @@ public class KafkaClient {
     private static final Logger logger = LoggerFactory.getLogger(KafkaClient.class);
     private final KafkaProducer<Object, Object> producer;
     private final ProducerConfig producerConfig;
+    private final Converter keyConverter;
+    private final Converter valueConverter;
+    private final HttpSinkConfig httpSinkConfig;
 
-    public KafkaClient(ProducerConfig producerConfig,
+
+    public KafkaClient(ProducerConfig producerConfig, HttpSinkConfig httpSinkConfig,
           Pair<Serializer<Object>, Serializer<Object>> serializers) {
         producer = new KafkaProducer<>(producerConfig.originals(), serializers.getKey(),
               serializers.getValue());
         this.producerConfig = producerConfig;
+        this.httpSinkConfig = httpSinkConfig;
+
+        keyConverter = createConverter(httpSinkConfig.getString(HttpSinkConfig.KEY_CONVERTER),
+              true);
+        valueConverter = createConverter(httpSinkConfig.getString(HttpSinkConfig.VALUE_CONVERTER),
+              false);
     }
 
-    public KafkaClient(ProducerConfig producerConfig) {
+    public KafkaClient(ProducerConfig producerConfig, HttpSinkConfig httpSinkConfig) {
         producer = new KafkaProducer<>(producerConfig.originals());
         this.producerConfig = producerConfig;
+        this.httpSinkConfig = httpSinkConfig;
+
+        keyConverter = createConverter(httpSinkConfig.getString(HttpSinkConfig.KEY_CONVERTER),
+              true);
+        valueConverter = createConverter(httpSinkConfig.getString(HttpSinkConfig.VALUE_CONVERTER),
+              false);
     }
 
     public void publish(Object sourceKey, String topic, Object value)
@@ -41,11 +57,11 @@ public class KafkaClient {
         publishRecord(new ProducerRecord<>(topic, sourceKey, value));
     }
 
-    public void publishError(HttpSinkConfig httpSinkConfig, RetriableError retriableError)
+    public void publishError(RetriableError retriableError)
           throws ExecutionException, InterruptedException, TimeoutException {
 
         ProducerRecord<Object, Object> producerRecord = obtainSerializedProducerRecord(
-              httpSinkConfig, retriableError.getSinkRecord(), httpSinkConfig.errorTopic);
+              retriableError.getSinkRecord(), httpSinkConfig.errorTopic);
         producerRecord.headers().add(new RecordHeader("errorMessage",
               retriableError.getErrorMessage().getBytes()));
         publishRecord(producerRecord);
@@ -67,16 +83,10 @@ public class KafkaClient {
     }
 
 
-    private ProducerRecord<Object, Object> obtainSerializedProducerRecord(
-          HttpSinkConfig httpSinkConfig, SinkRecord sinkRecord, String topic) {
-
-        Converter keyConverter = createConverter(httpSinkConfig, HttpSinkConfig.KEY_CONVERTER,
-              true);
+    private ProducerRecord<Object, Object> obtainSerializedProducerRecord(SinkRecord sinkRecord, String topic) {
         byte[] convertedKey = keyConverter
               .fromConnectData(topic, sinkRecord.keySchema(), sinkRecord.key());
 
-        Converter valueConverter = createConverter(httpSinkConfig, HttpSinkConfig.VALUE_CONVERTER,
-              false);
         byte[] convertedValue = valueConverter
               .fromConnectData(topic, sinkRecord.valueSchema(), sinkRecord.value());
 
@@ -88,9 +98,7 @@ public class KafkaClient {
     }
 
     @SuppressWarnings("unchecked")
-    private Converter createConverter(HttpSinkConfig httpSinkConfig,
-          String converterConfig, boolean isKey) {
-        String converterName = httpSinkConfig.getString(converterConfig);
+    private Converter createConverter(String converterName, boolean isKey) {
         try {
             Class<Converter> converter = (Class<Converter>) Class.forName(converterName);
             Converter converterInstance = converter.getConstructor().newInstance();

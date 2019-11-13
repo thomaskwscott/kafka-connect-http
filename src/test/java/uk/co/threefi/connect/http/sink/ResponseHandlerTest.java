@@ -157,7 +157,7 @@ public class ResponseHandlerTest {
               errorKafkaClient);
         responseHandler.handleErrors(sinkRecords, retriableErrors);
 
-        verify(errorKafkaClient).publishError(any(),any());
+        verify(errorKafkaClient).publishError(any());
     }
 
     @Test
