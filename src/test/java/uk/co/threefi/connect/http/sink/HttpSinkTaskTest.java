@@ -17,26 +17,21 @@ package uk.co.threefi.connect.http.sink;
 
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.expectLastCall;
-import static org.junit.Assert.fail;
 import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
 
 import io.confluent.connect.avro.AvroConverter;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import junit.framework.AssertionFailedError;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.apache.kafka.connect.storage.StringConverter;
@@ -47,18 +42,22 @@ import org.junit.Test;
 public class HttpSinkTaskTest extends EasyMockSupport {
 
     @Test
-    public void canProcessWhenNoErrorsFound()
-          throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    public void canProcessWhenNoErrorsFound() {
         Set<SinkRecord> records = Collections
               .singleton(new SinkRecord("stub", 0, null, null, null, "someVal", 0));
         final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
+        final ResponseHandler mockResponseHandler = createMock(ResponseHandler.class);
 
         mockWriter.write(records);
         expectLastCall().andReturn(new HashSet<ErrorResponse>()).times(1);
 
+        mockResponseHandler.handleErrors(anyObject(),anyObject());
+        expectLastCall().times(1);
+
         HttpSinkTask task = new HttpSinkTask() {
             @Override
             protected void init() {
+                this.responseHandler = mockResponseHandler;
                 this.writer = mockWriter;
             }
         };
@@ -66,17 +65,12 @@ public class HttpSinkTaskTest extends EasyMockSupport {
         Map<String, String> properties = getProperties(1);
         task.start(properties);
         replayAll();
-        try {
-            task.put(records);
-        } catch (RetriableException e) {
-            fail("No exception expected");
-        }
+        task.put(records);
         verifyAll();
     }
 
     @Test
-    public void canIgnoreWhenRecordsAreEmpty()
-          throws InterruptedException, ExecutionException, TimeoutException, IOException {
+    public void canIgnoreWhenRecordsAreEmpty() {
         Set<SinkRecord> records = new HashSet<>();
         final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
 
@@ -107,8 +101,7 @@ public class HttpSinkTaskTest extends EasyMockSupport {
     }
 
     @Test
-    public void canRetryAndHandleError()
-          throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    public void canRetryAndHandleError(){
         final int maxRetries = 2;
         final int retryBackoffMs = 1000;
 
@@ -118,10 +111,10 @@ public class HttpSinkTaskTest extends EasyMockSupport {
         ResponseHandler responseHandlerMock = createMock(ResponseHandler.class);
         SinkTaskContext ctx = createMock(SinkTaskContext.class);
 
-        Set<ResponseError> errorResponses =
-              Stream.of(new ResponseError("Key", "ErrorMessage")).collect(
+        Set<RetriableError> errorResponses =
+              Stream.of(new RetriableError("Key", "ErrorMessage")).collect(
                     Collectors.toSet());
-        mockWriter.write(records);
+        mockWriter.write(anyObject());
         expectLastCall().andReturn(errorResponses).times(maxRetries + 1);
 
         ctx.timeout(retryBackoffMs);
@@ -144,21 +137,8 @@ public class HttpSinkTaskTest extends EasyMockSupport {
 
         replayAll();
 
-        try {
-            task.put(records);
-            fail();
-        } catch (RetriableException expected) {
-        }
-        try {
-            task.put(records);
-            fail();
-        } catch (RetriableException expected) {
-        }
-        try {
-            task.put(records);
-        } catch (Exception e) {
-            fail("No exception is expected in the last retry");
-        }
+        task.put(records);
+
         verifyAll();
     }
 

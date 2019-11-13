@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonElement;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
+import uk.co.threefi.connect.http.sink.RetriableError;
 
 public class DataUtils {
 
@@ -48,5 +52,15 @@ public class DataUtils {
                 stripNulls(child);
             }
         }
+    }
+
+    public static Set<SinkRecord> getRetriableRecords(Collection<SinkRecord> records,
+          Set<RetriableError> retriableErrors) {
+        return records.stream()
+              .filter(record ->
+                    retriableErrors.stream()
+                          .map(RetriableError::getRecordKey)
+                          .anyMatch(key -> StringUtils.equals(getKey(record), key))).collect(
+                    Collectors.toSet());
     }
 }

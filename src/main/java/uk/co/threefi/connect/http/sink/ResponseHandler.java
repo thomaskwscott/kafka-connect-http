@@ -1,6 +1,7 @@
 package uk.co.threefi.connect.http.sink;
 
 import static uk.co.threefi.connect.http.util.DataUtils.getKey;
+import static uk.co.threefi.connect.http.util.DataUtils.getRetriableRecords;
 import static uk.co.threefi.connect.http.util.DataUtils.isBatchResponse;
 import static uk.co.threefi.connect.http.util.DataUtils.isValidJson;
 import static uk.co.threefi.connect.http.util.HttpUtil.isResponseSuccessful;
@@ -60,22 +61,18 @@ public class ResponseHandler {
     }
 
 
-    public Set<ResponseError> processResponse(Response response, String key, String body,
-          String formattedUrl) throws InterruptedException, ExecutionException, TimeoutException {
+    public Set<RetriableError> processResponse(Response response, String key, String body,
+          String formattedUrl) {
         if (!httpSinkConfig.responseTopic.isEmpty()) {
             sendToResponseTopic(response, formattedUrl, key);
         }
         return retrieveErrors(response, key, formattedUrl, body);
     }
 
-    public void handleErrors(Collection<SinkRecord> records, Set<ResponseError> responseErrors)
+    public void handleErrors(Collection<SinkRecord> records, Set<RetriableError> retriableErrors)
           throws ConnectException {
-        records.stream()
-              .filter(record ->
-                    responseErrors.stream()
-                          .map(ResponseError::getRecordKey)
-                          .anyMatch(key -> StringUtils.equals(getKey(record), key)))
-              .map(record -> getResponseErrorForRecord(record, responseErrors))
+        getRetriableRecords(records, retriableErrors).stream()
+              .map(record -> getResponseErrorForRecord(record, retriableErrors))
               .forEach(this::publishError);
     }
 
@@ -83,27 +80,26 @@ public class ResponseHandler {
         return httpSinkConfig;
     }
 
-    private ResponseError getResponseErrorForRecord(SinkRecord record,
-          Set<ResponseError> responseErrors) {
+    private RetriableError getResponseErrorForRecord(SinkRecord record,
+          Set<RetriableError> retriableErrors) {
         String recordKey = getKey(record);
-        Optional<String> errorMessage = responseErrors.stream()
+        Optional<String> errorMessage = retriableErrors.stream()
               .filter(responseError -> StringUtils.equals(responseError.getRecordKey(), recordKey))
-              .map(ResponseError::getErrorMessage)
+              .map(RetriableError::getErrorMessage)
               .findAny();
-        return new ResponseError(record, errorMessage.orElse(StringUtils.EMPTY));
+        return new RetriableError(record, errorMessage.orElse(StringUtils.EMPTY));
     }
 
-    private void publishError(ResponseError responseError) {
+    private void publishError(RetriableError retriableError) {
         try {
-            errorKafkaClient.publishError(httpSinkConfig, responseError);
+            errorKafkaClient.publishError(httpSinkConfig, retriableError);
         } catch (Exception e) {
             logger.error("Something failed while publishing error");
             throw new RuntimeException(e);
         }
     }
 
-    private void sendToResponseTopic(Response response, String formattedUrl, String key)
-          throws InterruptedException, ExecutionException, TimeoutException {
+    private void sendToResponseTopic(Response response, String formattedUrl, String key) {
         String statusMessage = response.getStatusMessage() == null
               ? StringUtils.EMPTY
               : response.getStatusMessage();
@@ -111,42 +107,47 @@ public class ResponseHandler {
 
         HttpResponse httpResponse = new HttpResponse(response.getStatusCode(), formattedUrl,
               statusMessage, responseBody);
-        responseKafkaClient.publish(key, httpSinkConfig.responseTopic, httpResponse);
+        try {
+            responseKafkaClient.publish(key, httpSinkConfig.responseTopic, httpResponse);
+        } catch (ExecutionException | InterruptedException | TimeoutException exception) {
+            logger.error(String.format(
+                  "Unable to publish batch with key %s to response topic", key), exception);
+        }
     }
 
-    private Set<ResponseError> retrieveErrors(Response response, String key, String formattedUrl,
+    private Set<RetriableError> retrieveErrors(Response response, String key, String formattedUrl,
           String body) {
 
-        Set<ResponseError> responseErrors = isValidJson(response.getBody())
+        Set<RetriableError> retriableErrors = isValidJson(response.getBody())
               ? processJsonResponse(response, key)
               : processUnformattedResponse(response, key);
 
-        if (!responseErrors.isEmpty()) {
+        if (!retriableErrors.isEmpty()) {
             logger.info("Response error handler found at least one error and will retry");
-            logger.info(String.format(
+            logger.debug(String.format(
                   "HTTP Response code: %s %s %s, Submitted payload: %s, url: %s",
                   response.getStatusCode(), response.getStatusMessage(), response.getBody(),
                   body, formattedUrl));
         }
-        logger.info("Response errors have been processed");
-        return responseErrors;
+        logger.debug("Response errors have been processed");
+        return retriableErrors;
     }
 
-    private Set<ResponseError> processUnformattedResponse(Response response, String key) {
+    private Set<RetriableError> processUnformattedResponse(Response response, String key) {
         if (!isResponseSuccessful(response)) {
             logger.debug("Found Unformatted Response");
             String responseBody =
                   response.getBody() == null ? StringUtils.EMPTY : response.getBody();
-            return Stream.of(new ResponseError(key, responseBody))
+            return Stream.of(new RetriableError(key, responseBody))
                   .collect(Collectors.toSet());
         }
         return new HashSet<>();
     }
 
-    private Set<ResponseError> processJsonResponse(Response response, String key) {
+    private Set<RetriableError> processJsonResponse(Response response, String key) {
         logger.debug("Found Json Response : " + response.getBody());
 
-        Set<ResponseError> responseErrors = new HashSet<>();
+        Set<RetriableError> retriableErrors = new HashSet<>();
         JsonElement jsonTree = new JsonParser().parse(response.getBody());
         JsonElement responseBody = Optional
                 .ofNullable(jsonTree.getAsJsonObject().get(httpSinkConfig.responseBody))
@@ -154,20 +155,20 @@ public class ResponseHandler {
 
         if (isBatchResponse(responseBody)) {
             JsonArray batchResponse = responseBody.getAsJsonArray();
-            batchResponse.forEach(element -> processBatchResponseElement(element, responseErrors));
+            batchResponse.forEach(element -> processBatchResponseElement(element, retriableErrors));
         } else {
             JsonObject jsonResponse = responseBody.getAsJsonObject();
             if (!isResponseSuccessful(response)) {
                 String bodyString =
                       jsonResponse.isJsonNull() ? StringUtils.EMPTY : jsonResponse.toString();
-                responseErrors.add(new ResponseError(key, bodyString));
+                retriableErrors.add(new RetriableError(key, bodyString));
             }
         }
-        return responseErrors;
+        return retriableErrors;
     }
 
     private void processBatchResponseElement(JsonElement element,
-          Set<ResponseError> responseErrors) {
+          Set<RetriableError> retriableErrors) {
         JsonObject response = element.getAsJsonObject();
 
         int statusCode = response.get(httpSinkConfig.errorBatchResponseStatusCode).getAsInt();
@@ -178,7 +179,7 @@ public class ResponseHandler {
                   response.get(httpSinkConfig.errorBatchResponseBody).isJsonNull()
                         ? StringUtils.EMPTY
                         : response.get(httpSinkConfig.errorBatchResponseBody).toString();
-            responseErrors.add(new ResponseError(batchResponseKey, body));
+            retriableErrors.add(new RetriableError(batchResponseKey, body));
         }
     }
 }

@@ -17,11 +17,11 @@ package uk.co.threefi.connect.http.sink;
 
 import static uk.co.threefi.connect.http.sink.HttpSinkConfig.ERROR_PRODUCER;
 import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
+import static uk.co.threefi.connect.http.util.DataUtils.getRetriableRecords;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -32,12 +32,10 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.threefi.connect.http.util.ResponseErrorException;
 
 public class HttpSinkTask extends SinkTask {
   private static final Logger log = LoggerFactory.getLogger(HttpSinkTask.class);
@@ -77,17 +75,21 @@ public class HttpSinkTask extends SinkTask {
         + "API...",
           records.size(), first.topic(), first.kafkaPartition(), first.kafkaOffset()
     );
-    Set<ResponseError> responseErrors = new HashSet<>();
-    try {
-      responseErrors = writer.write(records);
-      if (!responseErrors.isEmpty()) {
-        throw new ResponseErrorException("Errors found in Http Response");
-      }
-    } catch (Exception exception) {
-      retry(records, exception);
-      responseHandler.handleErrors(records, responseErrors);
-    }
+    Set<RetriableError> retriableErrors = writeRecords(records);
+    responseHandler.handleErrors(records, retriableErrors);
     remainingRetries = httpSinkConfig.maxRetries;
+  }
+
+  private Set<RetriableError> writeRecords(Collection<SinkRecord> records) {
+    Set<RetriableError> retriableErrors = writer.write(records);
+    if (!retriableErrors.isEmpty() && remainingRetries > 0) {
+      log.warn("Write of {} records failed, remainingRetries={}", records.size(), remainingRetries);
+      remainingRetries--;
+
+      retriableErrors = writeRecords(getRetriableRecords(records,retriableErrors));
+      context.timeout(httpSinkConfig.retryBackoffMs);
+    }
+    return retriableErrors;
   }
 
   @Override
@@ -108,26 +110,6 @@ public class HttpSinkTask extends SinkTask {
     responseHandler = new ResponseHandler(httpSinkConfig, responseProducerConfig,
           errorProducerConfig);
     writer = new HttpApiWriter(responseHandler);
-  }
-
-  private void retry(
-        Collection<SinkRecord> records, Exception exception) {
-    log.warn(
-          "Write of {} records failed, remainingRetries={}",
-          records.size(),
-          remainingRetries,
-          exception
-    );
-    if (remainingRetries > 0) {
-      try {
-        init();
-      } catch (Exception ex) {
-        throw new ConnectException(exception);
-      }
-      remainingRetries--;
-      context.timeout(httpSinkConfig.retryBackoffMs);
-      throw new RetriableException(exception);
-    }
   }
 
   private HashMap<String, String> getCustomErrorProducerProperties() {

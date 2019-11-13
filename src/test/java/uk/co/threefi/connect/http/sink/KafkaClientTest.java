@@ -104,8 +104,8 @@ public class KafkaClientTest {
         SinkRecord sinkRecord = new SinkRecord(
               errorTopic, 0, null, "someKey", null
               , "someValue", 0);
-        ResponseError responseError = new ResponseError(sinkRecord, "Error occurred");
-        kafkaClient.publishError(httpSinkConfig,responseError);
+        RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
+        kafkaClient.publishError(httpSinkConfig, retriableError);
 
         assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics()).hasSize(1);
         assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics().get(0).name())
@@ -135,8 +135,8 @@ public class KafkaClientTest {
         SinkRecord sinkRecord = new SinkRecord(
               "topic", 0, null, "someKey", null
               , "someValue", 0);
-        ResponseError responseError = new ResponseError(sinkRecord, "Error occurred");
-        kafkaClient.publishError(httpSinkConfig,responseError);
+        RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
+        kafkaClient.publishError(httpSinkConfig, retriableError);
     }
 
     @Test(expected = ExecutionException.class)

@@ -35,8 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.connect.data.Struct;
@@ -77,10 +75,9 @@ public class HttpApiWriter {
         httpClient = new AuthenticatedJavaNetHttpClient(authenticationProvider);
     }
 
-    public Set<ResponseError> write(final Collection<SinkRecord> records)
-          throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    public Set<RetriableError> write(final Collection<SinkRecord> records) {
 
-        Set<ResponseError> responseErrors = new HashSet<>();
+        Set<RetriableError> retriableErrors = new HashSet<>();
         for (SinkRecord record : records) {
             // build batch key
             String formattedKeyPattern = evaluateReplacements(httpSinkConfig.batchKeyPattern,
@@ -94,11 +91,11 @@ public class HttpApiWriter {
                 batches.get(formattedKeyPattern).add(record);
             }
             if (batches.get(formattedKeyPattern).size() >= httpSinkConfig.batchMaxSize) {
-                responseErrors.addAll(sendBatchAndGetResponseErrors(formattedKeyPattern));
+                retriableErrors.addAll(sendBatchAndGetRetriableErrors(formattedKeyPattern));
             }
         }
-        responseErrors.addAll(flushBatches());
-        return responseErrors;
+        retriableErrors.addAll(flushBatches());
+        return retriableErrors;
     }
 
     private PrivateKey extractPrivateKeyFromConfig(HttpSinkConfig config)
@@ -113,18 +110,16 @@ public class HttpApiWriter {
         return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
-    private Set<ResponseError> flushBatches()
-          throws InterruptedException, ExecutionException, TimeoutException, IOException {
+    private Set<RetriableError> flushBatches() {
         // send any outstanding batches
-        Set<ResponseError> responseErrors = new HashSet<>();
+        Set<RetriableError> retriableErrors = new HashSet<>();
         for (Map.Entry<String, List<SinkRecord>> entry : batches.entrySet()) {
-            responseErrors.addAll(sendBatchAndGetResponseErrors(entry.getKey()));
+            retriableErrors.addAll(sendBatchAndGetRetriableErrors(entry.getKey()));
         }
-        return responseErrors;
+        return retriableErrors;
     }
 
-    private Set<ResponseError> sendBatchAndGetResponseErrors(String formattedKeyPattern)
-          throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    private Set<RetriableError> sendBatchAndGetRetriableErrors(String formattedKeyPattern) {
 
         List<SinkRecord> records = batches.get(formattedKeyPattern);
 
@@ -148,10 +143,16 @@ public class HttpApiWriter {
                     httpSinkConfig.batchSuffix));
 
         log.debug("Submitting payload: {} to url: {}", body, formattedUrl);
-        Response response = httpClient
-              .makeRequest(requestMethod.toString(), formattedUrl, headers, body);
+        Response response;
+        try {
+            response = httpClient
+                  .makeRequest(requestMethod.toString(), formattedUrl, headers, body);
+        } catch (IOException exception) {
+            return records.stream()
+                  .map(sinkRecord-> new RetriableError(sinkRecord,exception.getMessage()))
+                  .collect(Collectors.toSet());
+        }
 
-        //clear batch
         batches.remove(formattedKeyPattern);
         log.debug("Received Response: {}", response);
         // Uses first key of batch as key

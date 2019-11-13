@@ -41,13 +41,13 @@ public class KafkaClient {
         publishRecord(new ProducerRecord<>(topic, sourceKey, value));
     }
 
-    public void publishError(HttpSinkConfig httpSinkConfig, ResponseError responseError)
+    public void publishError(HttpSinkConfig httpSinkConfig, RetriableError retriableError)
           throws ExecutionException, InterruptedException, TimeoutException {
 
         ProducerRecord<Object, Object> producerRecord = obtainSerializedProducerRecord(
-              httpSinkConfig, responseError.getSinkRecord(), httpSinkConfig.errorTopic);
+              httpSinkConfig, retriableError.getSinkRecord(), httpSinkConfig.errorTopic);
         producerRecord.headers().add(new RecordHeader("errorMessage",
-              responseError.getErrorMessage().getBytes()));
+              retriableError.getErrorMessage().getBytes()));
         publishRecord(producerRecord);
     }
 
@@ -63,7 +63,7 @@ public class KafkaClient {
         response.get(20, TimeUnit.SECONDS);
 
         logger.info("Message successfully sent to topic {} with key {}",
-              producerRecord.topic(), producerRecord.key());
+              producerRecord.topic(), key);
     }
 
 
@@ -84,7 +84,7 @@ public class KafkaClient {
     }
 
     private Object getMessageItem(Object value) {
-        return value instanceof byte[] ? "Byte array" : value;
+        return value instanceof byte[] ? "[Byte array]" : value;
     }
 
     @SuppressWarnings("unchecked")

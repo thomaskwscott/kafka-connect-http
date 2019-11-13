@@ -144,9 +144,9 @@ public class HttpApiWriterTest {
           "http://localhost:" + restHelper.getPort() + "/unauthorized");
     HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
-    Set<ResponseError> responseErrors = writer.write(sinkRecords);
-    assertThat(responseErrors).hasSize(1);
-    assertThat(((ResponseError) responseErrors.toArray()[0]).getErrorMessage())
+    Set<RetriableError> retriableErrors = writer.write(sinkRecords);
+    assertThat(retriableErrors).hasSize(1);
+    assertThat(((RetriableError) retriableErrors.toArray()[0]).getErrorMessage())
           .isEqualTo("{\"status\":\"unauthorized\"}");
   }
 
