@@ -154,7 +154,7 @@ public class HttpApiWriter {
             log.debug("Received Response: {}", response);
             // Uses first key of batch as key
             return responseHandler.processResponse(response, getKey(record), body, formattedUrl);
-        } catch (IOException exception) {
+        } catch (Exception exception) {
             return records.stream()
                   .map(sinkRecord -> new RetriableError(sinkRecord, exception.getMessage()))
                   .collect(Collectors.toSet());
