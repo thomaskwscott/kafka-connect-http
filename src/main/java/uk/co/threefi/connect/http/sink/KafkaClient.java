@@ -72,7 +72,7 @@ public class KafkaClient {
         Object key = getMessageItem(producerRecord.key());
         Object value = getMessageItem(producerRecord.value());
 
-        logger.info("Submitting to topic {} with key {} and value {}",
+        logger.debug("Submitting to topic {} with key {} and value {}",
               producerRecord.topic(), key, value);
 
         Future<RecordMetadata> response = producer.send(producerRecord);
@@ -94,7 +94,7 @@ public class KafkaClient {
     }
 
     private Object getMessageItem(Object value) {
-        return value instanceof byte[] ? "[Byte array]" : value;
+        return value instanceof byte[] ? new String((byte[]) value) : value;
     }
 
     @SuppressWarnings("unchecked")

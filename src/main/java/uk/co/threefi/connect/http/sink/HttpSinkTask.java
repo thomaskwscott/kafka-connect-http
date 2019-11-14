@@ -83,7 +83,7 @@ public class HttpSinkTask extends SinkTask {
   private Set<RetriableError> writeRecords(Collection<SinkRecord> records) {
     Set<RetriableError> retriableErrors = writer.write(records);
     if (!retriableErrors.isEmpty() && remainingRetries > 0) {
-      log.warn("Write of {} records failed, remainingRetries={}", records.size(), remainingRetries);
+      log.warn("Write of {} records failed, remainingRetries={}", retriableErrors.size(), remainingRetries);
       remainingRetries--;
 
       retriableErrors = writeRecords(getRetriableRecords(records,retriableErrors));
