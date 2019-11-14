@@ -13,15 +13,13 @@
  * limitations under the License.
  */
 
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.task;
 
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.junit.Assert.fail;
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RESPONSE_PRODUCER;
 
-import io.confluent.connect.avro.AvroConverter;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import junit.framework.AssertionFailedError;
+
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -43,6 +41,14 @@ import org.apache.kafka.connect.storage.StringConverter;
 import org.apache.zookeeper.proto.ErrorResponse;
 import org.easymock.EasyMockSupport;
 import org.junit.Test;
+
+import io.confluent.connect.avro.AvroConverter;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import junit.framework.AssertionFailedError;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
+import uk.co.threefi.connect.http.sink.writer.HttpApiWriter;
 
 public class HttpSinkTaskTest extends EasyMockSupport {
 

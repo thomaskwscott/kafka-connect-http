@@ -5,10 +5,10 @@ import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
 
-import uk.co.threefi.connect.http.sink.Response;
-
 import java.util.Arrays;
 import java.util.List;
+
+import uk.co.threefi.connect.http.sink.dto.Response;
 
 public class HttpUtil {
 

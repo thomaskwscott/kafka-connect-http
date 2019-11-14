@@ -1,16 +1,4 @@
-package uk.co.threefi.connect.http.sink;
-
-import com.google.common.collect.ImmutableMap;
-import java.io.IOException;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+package uk.co.threefi.connect.http.sink.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -19,6 +7,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static uk.co.threefi.connect.http.Assertions.assertThat;
+
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import com.google.common.collect.ImmutableMap;
+
+import uk.co.threefi.connect.http.sink.client.JavaNetHttpClient;
+import uk.co.threefi.connect.http.sink.dto.BearerToken;
+import uk.co.threefi.connect.http.sink.dto.Response;
+import uk.co.threefi.connect.http.sink.generator.PayloadGenerator;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SalesforceAuthenticationProviderTest {

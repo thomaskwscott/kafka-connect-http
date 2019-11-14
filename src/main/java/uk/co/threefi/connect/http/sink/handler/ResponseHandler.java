@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.handler;
 
 import static uk.co.threefi.connect.http.util.DataUtils.getKey;
 import static uk.co.threefi.connect.http.util.DataUtils.isBatchResponse;
@@ -18,7 +18,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serializer;
-import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +28,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import uk.co.threefi.connect.http.HttpResponse;
+import uk.co.threefi.connect.http.sink.client.KafkaClient;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.dto.Response;
+import uk.co.threefi.connect.http.sink.dto.ResponseError;
 
 public class ResponseHandler {
 

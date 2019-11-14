@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.generator;
 
 import java.security.PrivateKey;
 import java.time.Instant;

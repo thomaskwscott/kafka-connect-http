@@ -13,17 +13,11 @@
  * limitations under the License.
  */
 
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.writer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static uk.co.threefi.connect.http.sink.RequestInfoAssert.assertThat;
 
-import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
-import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
-import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -33,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -45,8 +40,21 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
+
+import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import uk.co.threefi.connect.http.HttpResponse;
-import uk.co.threefi.connect.http.sink.HttpSinkConfig.RequestMethod;
+import uk.co.threefi.connect.http.sink.RequestInfo;
+import uk.co.threefi.connect.http.sink.RestHelper;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RequestMethod;
+import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
 
 public class HttpApiWriterTest {
 

@@ -1,18 +1,16 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.handler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.ERROR_BATCH_RESPONSE_BODY;
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.ERROR_BATCH_RESPONSE_KEY;
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.ERROR_BATCH_RESPONSE_STATUS_CODE;
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_BODY;
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.ERROR_BATCH_RESPONSE_BODY;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.ERROR_BATCH_RESPONSE_KEY;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.ERROR_BATCH_RESPONSE_STATUS_CODE;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RESPONSE_BODY;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RESPONSE_PRODUCER;
 
-import com.google.gson.JsonParser;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,14 +21,23 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.gson.JsonParser;
+
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import uk.co.threefi.connect.http.HttpResponse;
-import uk.co.threefi.connect.http.sink.HttpSinkConfig.RequestMethod;
+import uk.co.threefi.connect.http.sink.client.KafkaClient;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RequestMethod;
+import uk.co.threefi.connect.http.sink.dto.Response;
+import uk.co.threefi.connect.http.sink.dto.ResponseError;
 
 public class ResponseHandlerTest {
 

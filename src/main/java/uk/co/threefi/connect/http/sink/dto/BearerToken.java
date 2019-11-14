@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.dto;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -9,7 +9,7 @@ public class BearerToken {
     private final String token;
     private final Instant expiry;
 
-    BearerToken(String token, Instant expiry) {
+    public BearerToken(String token, Instant expiry) {
         this.token = token;
         this.expiry = expiry;
     }

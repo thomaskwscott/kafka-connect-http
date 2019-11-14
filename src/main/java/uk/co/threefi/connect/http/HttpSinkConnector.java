@@ -16,6 +16,10 @@
 
 package uk.co.threefi.connect.http;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.common.config.Config;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
@@ -23,12 +27,8 @@ import org.apache.kafka.connect.sink.SinkConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import uk.co.threefi.connect.http.sink.HttpSinkConfig;
-import uk.co.threefi.connect.http.sink.HttpSinkTask;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.task.HttpSinkTask;
 import uk.co.threefi.connect.http.util.Version;
 
 public final class HttpSinkConnector extends SinkConnector {

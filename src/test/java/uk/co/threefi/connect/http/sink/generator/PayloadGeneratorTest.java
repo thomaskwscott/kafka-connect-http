@@ -1,10 +1,8 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.generator;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import static org.assertj.core.api.Assertions.assertThat;
+import static uk.co.threefi.connect.http.Assertions.assertThat;
+
 import java.security.KeyPair;
 import java.sql.Date;
 import java.time.Instant;
@@ -12,12 +10,16 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static uk.co.threefi.connect.http.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
 public class PayloadGeneratorTest {
     private static final Instant NOW =

@@ -293,7 +293,7 @@
                 </executions>
                 <configuration>
                     <classes>
-                        <class>uk.co.threefi.connect.http.sink.BearerToken</class>
+                        <class>uk.co.threefi.connect.http.sink.dto.BearerToken</class>
                         <class>io.jsonwebtoken.Claims</class>
                     </classes>
                     <entryPointClassPackage>uk.co.threefi.connect.http</entryPointClassPackage>

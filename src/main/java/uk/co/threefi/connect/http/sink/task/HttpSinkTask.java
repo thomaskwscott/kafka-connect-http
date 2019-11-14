@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.task;
 
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.ERROR_PRODUCER;
-import static uk.co.threefi.connect.http.sink.HttpSinkConfig.RESPONSE_PRODUCER;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.ERROR_PRODUCER;
+import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RESPONSE_PRODUCER;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +39,11 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.co.threefi.connect.http.util.ResponseErrorException;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.exception.ResponseErrorException;
+import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
+import uk.co.threefi.connect.http.sink.writer.HttpApiWriter;
 
 public class HttpSinkTask extends SinkTask {
   private static final Logger log = LoggerFactory.getLogger(HttpSinkTask.class);

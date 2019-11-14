@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,6 +13,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import uk.co.threefi.connect.http.sink.dto.Response;
 import uk.co.threefi.connect.http.util.HttpUtil;
 
 public class JavaNetHttpClient {

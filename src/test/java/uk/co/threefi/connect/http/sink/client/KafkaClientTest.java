@@ -1,15 +1,7 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.salesforce.kafka.test.KafkaBroker;
-import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
-import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
-import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
-import io.confluent.kafka.serializers.KafkaAvroDeserializer;
-import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -29,7 +22,19 @@ import org.apache.kafka.connect.storage.StringConverter;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import com.salesforce.kafka.test.KafkaBroker;
+import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
+
+import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
+import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import uk.co.threefi.connect.http.HttpResponse;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.dto.ResponseError;
 
 public class KafkaClientTest {
 

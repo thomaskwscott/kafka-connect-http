@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.writer;
 
 import static uk.co.threefi.connect.http.util.DataUtils.buildJsonFromStruct;
 import static uk.co.threefi.connect.http.util.DataUtils.getKey;
@@ -44,6 +44,15 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import uk.co.threefi.connect.http.sink.client.AuthenticatedJavaNetHttpClient;
+import uk.co.threefi.connect.http.sink.client.JavaNetHttpClient;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.dto.Response;
+import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.generator.PayloadGenerator;
+import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
+import uk.co.threefi.connect.http.sink.provider.SalesforceAuthenticationProvider;
 
 
 public class HttpApiWriter {

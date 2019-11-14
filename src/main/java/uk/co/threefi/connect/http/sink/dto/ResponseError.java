@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.dto;
 
 import org.apache.kafka.connect.sink.SinkRecord;
 
