@@ -43,7 +43,7 @@ public class BearerToken {
                 .toString();
     }
 
-    public boolean isValid(Clock clock) {
+    public boolean isValid(final Clock clock) {
         return Instant.now(clock).isBefore(expiry);
     }
 }

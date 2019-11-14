@@ -19,7 +19,7 @@ public class AuthenticatedJavaNetHttpClient extends JavaNetHttpClient {
                                 final Map<String, String> headers,
                                 final String payload) throws IOException {
         headers.put("Authorization", authenticationProvider.getBearerToken());
-        Response response = super.makeRequest(requestMethod, url, headers, payload);
+        final Response response = super.makeRequest(requestMethod, url, headers, payload);
         if (response.getStatusCode() == 401) {
             log.debug("Request came back unauthorized; retrying with a fresh token");
             headers.put("Authorization", authenticationProvider.obtainNewBearerToken());

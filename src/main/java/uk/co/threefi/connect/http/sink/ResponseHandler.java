@@ -5,10 +5,6 @@ import static uk.co.threefi.connect.http.util.DataUtils.isBatchResponse;
 import static uk.co.threefi.connect.http.util.DataUtils.isValidJson;
 import static uk.co.threefi.connect.http.util.HttpUtil.isResponseSuccessful;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
@@ -17,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -25,6 +22,12 @@ import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import uk.co.threefi.connect.http.HttpResponse;
 
 public class ResponseHandler {
@@ -60,19 +63,21 @@ public class ResponseHandler {
     }
 
 
-    public Set<ResponseError> processResponse(Response response, String key, String body,
-          String formattedUrl) throws InterruptedException, ExecutionException, TimeoutException {
+    public Set<ResponseError> processResponse(final Response response,
+                                              final String key, String body,
+                                              final String formattedUrl)
+        throws InterruptedException, ExecutionException, TimeoutException {
+
         if (!httpSinkConfig.responseTopic.isEmpty()) {
             sendToResponseTopic(response, formattedUrl, key);
         }
         return retrieveErrors(response, key, formattedUrl, body);
     }
 
-    public void handleErrors(Collection<SinkRecord> records, Set<ResponseError> responseErrors)
-          throws ConnectException {
+    public void handleErrors(final Collection<SinkRecord> records,
+                             final Set<ResponseError> responseErrors) {
         records.stream()
-              .filter(record ->
-                    responseErrors.stream()
+              .filter(record -> responseErrors.stream()
                           .map(ResponseError::getRecordKey)
                           .anyMatch(key -> StringUtils.equals(getKey(record), key)))
               .map(record -> getResponseErrorForRecord(record, responseErrors))
@@ -83,10 +88,10 @@ public class ResponseHandler {
         return httpSinkConfig;
     }
 
-    private ResponseError getResponseErrorForRecord(SinkRecord record,
-          Set<ResponseError> responseErrors) {
-        String recordKey = getKey(record);
-        Optional<String> errorMessage = responseErrors.stream()
+    private ResponseError getResponseErrorForRecord(final SinkRecord record,
+                                                    final Set<ResponseError> responseErrors) {
+        final String recordKey = getKey(record);
+        final Optional<String> errorMessage = responseErrors.stream()
               .filter(responseError -> StringUtils.equals(responseError.getRecordKey(), recordKey))
               .map(ResponseError::getErrorMessage)
               .findAny();
@@ -102,22 +107,26 @@ public class ResponseHandler {
         }
     }
 
-    private void sendToResponseTopic(Response response, String formattedUrl, String key)
-          throws InterruptedException, ExecutionException, TimeoutException {
-        String statusMessage = response.getStatusMessage() == null
+    private void sendToResponseTopic(final Response response,
+                                     final String formattedUrl,
+                                     final String key)
+        throws InterruptedException, ExecutionException, TimeoutException {
+
+        final String statusMessage = response.getStatusMessage() == null
               ? StringUtils.EMPTY
               : response.getStatusMessage();
-        String responseBody = response.getBody() == null ? StringUtils.EMPTY : response.getBody();
+        final String responseBody = response.getBody() == null ? StringUtils.EMPTY : response.getBody();
 
-        HttpResponse httpResponse = new HttpResponse(response.getStatusCode(), formattedUrl,
+        final HttpResponse httpResponse = new HttpResponse(response.getStatusCode(), formattedUrl,
               statusMessage, responseBody);
         responseKafkaClient.publish(key, httpSinkConfig.responseTopic, httpResponse);
     }
 
-    private Set<ResponseError> retrieveErrors(Response response, String key, String formattedUrl,
-          String body) {
-
-        Set<ResponseError> responseErrors = isValidJson(response.getBody())
+    private Set<ResponseError> retrieveErrors(final Response response,
+                                              final String key,
+                                              final String formattedUrl,
+                                              final String body) {
+        final Set<ResponseError> responseErrors = isValidJson(response.getBody())
               ? processJsonResponse(response, key)
               : processUnformattedResponse(response, key);
 
@@ -132,10 +141,10 @@ public class ResponseHandler {
         return responseErrors;
     }
 
-    private Set<ResponseError> processUnformattedResponse(Response response, String key) {
+    private Set<ResponseError> processUnformattedResponse(final Response response, final String key) {
         if (!isResponseSuccessful(response)) {
             logger.debug("Found Unformatted Response");
-            String responseBody =
+            final String responseBody =
                   response.getBody() == null ? StringUtils.EMPTY : response.getBody();
             return Stream.of(new ResponseError(key, responseBody))
                   .collect(Collectors.toSet());
@@ -143,22 +152,22 @@ public class ResponseHandler {
         return new HashSet<>();
     }
 
-    private Set<ResponseError> processJsonResponse(Response response, String key) {
-        logger.debug("Found Json Response : " + response.getBody());
+    private Set<ResponseError> processJsonResponse(final Response response, final String key) {
+        logger.debug("Found Json Response : {}", response.getBody());
 
-        Set<ResponseError> responseErrors = new HashSet<>();
-        JsonElement jsonTree = new JsonParser().parse(response.getBody());
-        JsonElement responseBody = Optional
+        final JsonElement jsonTree = new JsonParser().parse(response.getBody());
+        final JsonElement responseBody = Optional
                 .ofNullable(jsonTree.getAsJsonObject().get(httpSinkConfig.responseBody))
                 .orElse(jsonTree);
+        final Set<ResponseError> responseErrors = new HashSet<>();
 
         if (isBatchResponse(responseBody)) {
-            JsonArray batchResponse = responseBody.getAsJsonArray();
+            final JsonArray batchResponse = responseBody.getAsJsonArray();
             batchResponse.forEach(element -> processBatchResponseElement(element, responseErrors));
         } else {
-            JsonObject jsonResponse = responseBody.getAsJsonObject();
+            final JsonObject jsonResponse = responseBody.getAsJsonObject();
             if (!isResponseSuccessful(response)) {
-                String bodyString =
+                final String bodyString =
                       jsonResponse.isJsonNull() ? StringUtils.EMPTY : jsonResponse.toString();
                 responseErrors.add(new ResponseError(key, bodyString));
             }
@@ -166,19 +175,23 @@ public class ResponseHandler {
         return responseErrors;
     }
 
-    private void processBatchResponseElement(JsonElement element,
-          Set<ResponseError> responseErrors) {
-        JsonObject response = element.getAsJsonObject();
+    private void processBatchResponseElement(final JsonElement element,
+                                             final Set<ResponseError> responseErrors) {
+        final JsonObject response = element.getAsJsonObject();
 
-        int statusCode = response.get(httpSinkConfig.errorBatchResponseStatusCode).getAsInt();
+        final int statusCode = response.get(httpSinkConfig.errorBatchResponseStatusCode).getAsInt();
         if (!isResponseSuccessful(statusCode)) {
-            String batchResponseKey = StringUtils.trim(response
-                  .get(httpSinkConfig.errorBatchResponseKey).getAsString());
-            String body =
-                  response.get(httpSinkConfig.errorBatchResponseBody).isJsonNull()
-                        ? StringUtils.EMPTY
-                        : response.get(httpSinkConfig.errorBatchResponseBody).toString();
-            responseErrors.add(new ResponseError(batchResponseKey, body));
+            addErrorToResponseErrors(response, responseErrors);
         }
+    }
+
+    private void addErrorToResponseErrors(final JsonObject response,
+                                          final Set<ResponseError> responseErrors){
+        final String batchResponseKey = StringUtils.trim(response
+            .get(httpSinkConfig.errorBatchResponseKey).getAsString());
+        final String body = response.get(httpSinkConfig.errorBatchResponseBody).isJsonNull()
+                ? StringUtils.EMPTY
+                : response.get(httpSinkConfig.errorBatchResponseBody).toString();
+        responseErrors.add(new ResponseError(batchResponseKey, body));
     }
 }

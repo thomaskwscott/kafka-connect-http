@@ -13,11 +13,11 @@ import org.apache.kafka.connect.sink.SinkRecord;
 
 public class DataUtils {
 
-    public static boolean isBatchResponse(JsonElement jsonElement) {
+    public static boolean isBatchResponse(final JsonElement jsonElement) {
         return jsonElement.isJsonArray();
     }
 
-    public static boolean isValidJson(String jsonInString) {
+    public static boolean isValidJson(final String jsonInString) {
         try {
             final ObjectMapper mapper = new ObjectMapper();
             mapper.readTree(jsonInString);
@@ -27,19 +27,19 @@ public class DataUtils {
         }
     }
 
-    public static String getKey(SinkRecord record) {
+    public static String getKey(final SinkRecord record) {
         return record.key() == null ? StringUtils.EMPTY : StringUtils.trim(record.key().toString());
     }
 
-    public static String buildJsonFromStruct(Struct struct, List<String> filter) {
-            JsonNode jsonNode = new SimpleJsonConverter().fromConnectData(struct.schema(), struct);
+    public static String buildJsonFromStruct(final Struct struct, final List<String> filter) {
+        final JsonNode jsonNode = new SimpleJsonConverter().fromConnectData(struct.schema(), struct);
         stripNulls(jsonNode);
         ((ObjectNode) jsonNode).remove(filter);
         return jsonNode.toString();
     }
 
-    private static void stripNulls(JsonNode node) {
-        Iterator<JsonNode> it = node.iterator();
+    private static void stripNulls(final JsonNode node) {
+        final Iterator<JsonNode> it = node.iterator();
         while (it.hasNext()) {
             JsonNode child = it.next();
             if (child.isNull()) {

@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
@@ -573,9 +574,7 @@ public class HttpSinkConfig extends AbstractConfig {
     public final String salesforceAuthenticationClientId;
     public final String salesforceAuthenticationUsername;
     public final String salesforceAuthenticationPrivateKey;
-    public static String keyConverterClassName;
-    public static String valueConverterClassName;
-    public static String valueConverterSchemaRegistryUrl;
+
 
     public HttpSinkConfig(Map<?, ?> props) {
         super(CONFIG_DEF, props);
@@ -606,9 +605,6 @@ public class HttpSinkConfig extends AbstractConfig {
         salesforceAuthenticationClientId = getString(SALESFORCE_AUTHENTICATION_CLIENT_ID);
         salesforceAuthenticationUsername = getString(SALESFORCE_AUTHENTICATION_USERNAME);
         salesforceAuthenticationPrivateKey = getString(SALESFORCE_AUTHENTICATION_PRIVATE_KEY);
-        keyConverterClassName = getString(KEY_CONVERTER);
-        valueConverterClassName = getString(VALUE_CONVERTER);
-        valueConverterSchemaRegistryUrl = getString(VALUE_CONVERTER_SR_URL);
     }
 
 
@@ -643,9 +639,5 @@ public class HttpSinkConfig extends AbstractConfig {
         public String toString() {
             return canonicalValues.toString();
         }
-    }
-
-    public static void main(String... args) {
-        System.out.println(CONFIG_DEF.toEnrichedRst());
     }
 }
