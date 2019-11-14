@@ -76,7 +76,12 @@ public class HttpSinkTask extends SinkTask {
           records.size(), first.topic(), first.kafkaPartition(), first.kafkaOffset()
     );
     Set<RetriableError> retriableErrors = writeRecords(records);
-    responseHandler.handleErrors(records, retriableErrors);
+
+    try{
+      responseHandler.handleErrors(records, retriableErrors);
+    } catch (Exception e){
+      log.error("Unable to handle errors in DLQ. Continuing with next batch");
+    }
     remainingRetries = httpSinkConfig.maxRetries;
   }
 

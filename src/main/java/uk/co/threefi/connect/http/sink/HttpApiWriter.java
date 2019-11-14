@@ -120,43 +120,45 @@ public class HttpApiWriter {
     }
 
     private Set<RetriableError> sendBatchAndGetRetriableErrors(String formattedKeyPattern) {
-
         List<SinkRecord> records = batches.get(formattedKeyPattern);
-
-        // the first record in the batch is used to build the url as we
-        // assume it will be consistent across all records.
-        SinkRecord record = records.get(0);
-        String formattedUrl = evaluateReplacements(httpSinkConfig.httpApiUrl, record);
-        HttpSinkConfig.RequestMethod requestMethod = httpSinkConfig.requestMethod;
-
-        // add headers
-        Map<String, String> headers = Arrays
-              .stream(httpSinkConfig.headers.split(httpSinkConfig.headerSeparator))
-              .filter(header -> header.contains(HEADER_VALUE_SEPARATOR))
-              .map(header -> header.split(HEADER_VALUE_SEPARATOR))
-              .collect(
-                    Collectors.toMap(splitHeader -> splitHeader[0], splitHeader -> splitHeader[1]));
-
-        String body = records.stream()
-              .map(this::buildRecord)
-              .collect(Collectors.joining(httpSinkConfig.batchSeparator, httpSinkConfig.batchPrefix,
-                    httpSinkConfig.batchSuffix));
-
-        log.debug("Submitting payload: {} to url: {}", body, formattedUrl);
-        Response response;
         try {
+
+            // the first record in the batch is used to build the url as we
+            // assume it will be consistent across all records.
+            SinkRecord record = records.get(0);
+            String formattedUrl = evaluateReplacements(httpSinkConfig.httpApiUrl, record);
+            HttpSinkConfig.RequestMethod requestMethod = httpSinkConfig.requestMethod;
+
+            // add headers
+            Map<String, String> headers = Arrays
+                  .stream(httpSinkConfig.headers.split(httpSinkConfig.headerSeparator))
+                  .filter(header -> header.contains(HEADER_VALUE_SEPARATOR))
+                  .map(header -> header.split(HEADER_VALUE_SEPARATOR))
+                  .collect(
+                        Collectors
+                              .toMap(splitHeader -> splitHeader[0], splitHeader -> splitHeader[1]));
+
+            String body = records.stream()
+                  .map(this::buildRecord)
+                  .collect(Collectors
+                        .joining(httpSinkConfig.batchSeparator, httpSinkConfig.batchPrefix,
+                              httpSinkConfig.batchSuffix));
+
+            log.debug("Submitting payload: {} to url: {}", body, formattedUrl);
+            Response response;
+
             response = httpClient
                   .makeRequest(requestMethod.toString(), formattedUrl, headers, body);
+
+            batches.remove(formattedKeyPattern);
+            log.debug("Received Response: {}", response);
+            // Uses first key of batch as key
+            return responseHandler.processResponse(response, getKey(record), body, formattedUrl);
         } catch (IOException exception) {
             return records.stream()
-                  .map(sinkRecord-> new RetriableError(sinkRecord,exception.getMessage()))
+                  .map(sinkRecord -> new RetriableError(sinkRecord, exception.getMessage()))
                   .collect(Collectors.toSet());
         }
-
-        batches.remove(formattedKeyPattern);
-        log.debug("Received Response: {}", response);
-        // Uses first key of batch as key
-        return responseHandler.processResponse(response, getKey(record), body, formattedUrl);
     }
 
     private String buildRecord(SinkRecord record) {
