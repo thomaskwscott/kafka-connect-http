@@ -51,18 +51,9 @@ public class ResponseHandler {
   }
 
   public ResponseHandler(
-      HttpSinkConfig httpSinkConfig,
-      ProducerConfig responseProducerConfig,
-      ProducerConfig errorProducerConfig) {
-    this.httpSinkConfig = httpSinkConfig;
-    responseKafkaClient = new ResponseKafkaClient(responseProducerConfig);
-    errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
-  }
-
-  public ResponseHandler(
-      HttpSinkConfig httpSinkConfig,
-      ResponseKafkaClient responseKafkaClient,
-      ErrorKafkaClient errorKafkaClient) {
+      final HttpSinkConfig httpSinkConfig,
+      final ResponseKafkaClient responseKafkaClient,
+      final ErrorKafkaClient errorKafkaClient) {
     this.httpSinkConfig = httpSinkConfig;
     this.responseKafkaClient = responseKafkaClient;
     this.errorKafkaClient = errorKafkaClient;

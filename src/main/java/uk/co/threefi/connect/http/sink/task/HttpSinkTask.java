@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -38,7 +37,8 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
+import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.dto.ResponseError;
 import uk.co.threefi.connect.http.sink.exception.ResponseErrorException;
@@ -115,8 +115,11 @@ public class HttpSinkTask extends SinkTask {
   }
 
   protected void init() throws Exception {
-    responseHandler = new ResponseHandler(httpSinkConfig, responseProducerConfig,
-          errorProducerConfig);
+    final ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(responseProducerConfig);
+    final ErrorKafkaClient errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
+
+    responseHandler = new ResponseHandler(httpSinkConfig, responseKafkaClient,
+          errorKafkaClient);
     writer = new HttpApiWriter(responseHandler);
   }
 

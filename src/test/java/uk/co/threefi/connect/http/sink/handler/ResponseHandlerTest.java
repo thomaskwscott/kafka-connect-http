@@ -47,13 +47,16 @@ public class ResponseHandlerTest {
 
   @Before
   public void init() {
-    HttpSinkConfig httpSinkConfig = new HttpSinkConfig(getProperties());
-    ProducerConfig responseProducerConfig =
+    final HttpSinkConfig httpSinkConfig = new HttpSinkConfig(getProperties());
+    final ProducerConfig responseProducerConfig =
         new ProducerConfig(Collections.unmodifiableMap(getResponseProducerProperties()));
-    ProducerConfig errorProducerConfig =
+    final ProducerConfig errorProducerConfig =
         new ProducerConfig(Collections.unmodifiableMap(getErrorProducerProperties()));
-    responseHandler =
-        new ResponseHandler(httpSinkConfig, responseProducerConfig, errorProducerConfig);
+
+    final ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(responseProducerConfig);
+    final ErrorKafkaClient errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
+
+    responseHandler = new ResponseHandler(httpSinkConfig, responseKafkaClient, errorKafkaClient);
   }
 
   @Test
@@ -155,8 +158,7 @@ public class ResponseHandlerTest {
   }
 
   @Test
-  public void canHandleFoundErrors()
-      throws InterruptedException, ExecutionException, TimeoutException {
+  public void canHandleFoundErrors() throws Exception {
     List<SinkRecord> sinkRecords = new ArrayList<>();
     String payload1 = "someValue";
     sinkRecords.add(new SinkRecord("someTopic1", 0, null, inputKey, null, payload1, 0));
@@ -182,6 +184,7 @@ public class ResponseHandlerTest {
     HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
 
     ResponseKafkaClient responseKafkaClient = mock(ResponseKafkaClient.class);
+
     ResponseHandler responseHandler =
         new ResponseHandler(httpSinkConfig, responseKafkaClient, null);
     responseHandler.processResponse(response, inputKey, "body", sourceUrl);
