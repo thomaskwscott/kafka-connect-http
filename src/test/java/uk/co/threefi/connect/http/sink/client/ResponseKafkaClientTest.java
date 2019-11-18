@@ -8,20 +8,19 @@ import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientExcept
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.Test;
 import uk.co.threefi.connect.http.HttpResponse;
+import uk.co.threefi.connect.http.sink.MockKafkaAvroSerializer;
 
 public class ResponseKafkaClientTest extends KafkaClientTest {
 
@@ -36,17 +35,10 @@ public class ResponseKafkaClientTest extends KafkaClientTest {
     HttpResponse httpResponse = new HttpResponse(201, "http://testURL", "No Content", "Body");
 
     ProducerConfig producerConfig =
-        getProducerConfig(StringSerializer.class, KafkaAvroSerializer.class);
+        getProducerConfig(StringSerializer.class, MockKafkaAvroSerializer.class);
 
-    Map<String, Object> serializerProperties = new HashMap<>();
-    serializerProperties.put(KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS, true);
-    serializerProperties.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "nothing");
-    KafkaAvroSerializer serializer = new KafkaAvroSerializer(mockSchemaRegistryClient);
-    serializer.configure(serializerProperties, false);
-
-    ResponseKafkaClient responseKafkaClient =
-        new ResponseKafkaClient(producerConfig, Pair.of(null, serializer));
-    responseKafkaClient.publishRecord(new ProducerRecord<>(responseTopic, key, httpResponse));
+    ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(producerConfig);
+    responseKafkaClient.publishResponse(new ProducerRecord<>(responseTopic, key, httpResponse));
 
     assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics()).hasSize(1);
     assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics().get(0).name())
@@ -73,21 +65,14 @@ public class ResponseKafkaClientTest extends KafkaClientTest {
     HttpResponse httpResponse = new HttpResponse(201, "http://testURL", "No Content", "Body");
 
     ProducerConfig producerConfig =
-        getProducerConfig(StringSerializer.class, KafkaAvroSerializer.class);
+        getProducerConfig(StringSerializer.class, MockKafkaAvroSerializer.class);
 
-    Map<String, Object> serializerProperties = new HashMap<>();
-    serializerProperties.put(KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS, false);
-    serializerProperties.put(KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "nothing");
-    KafkaAvroSerializer serializer = new KafkaAvroSerializer(mockSchemaRegistryClient);
-    serializer.configure(serializerProperties, false);
-
-    ResponseKafkaClient responseKafkaClient =
-        new ResponseKafkaClient(producerConfig, Pair.of(null, serializer));
+    ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(producerConfig);
 
     for (KafkaBroker kafkaBroker : kafkaTestHelper.getKafkaBrokers()) {
       kafkaBroker.stop();
     }
-    responseKafkaClient.publishRecord(new ProducerRecord<>(responseTopic, key, httpResponse));
+    responseKafkaClient.publishResponse(new ProducerRecord<>(responseTopic, key, httpResponse));
   }
 
   private HttpResponse getHttpResponse(List<ConsumerRecord<byte[], byte[]>> records)

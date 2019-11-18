@@ -3,12 +3,10 @@ package uk.co.threefi.connect.http.sink.client;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
-import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -22,13 +20,6 @@ public class ErrorKafkaClient extends KafkaClient {
 
   private static final Logger logger = LoggerFactory.getLogger(ErrorKafkaClient.class);
   private final ProducerConfig producerConfig;
-
-  public ErrorKafkaClient(final ProducerConfig producerConfig,
-      final Pair<Serializer<Object>, Serializer<Object>> serializers) {
-    producer = new KafkaProducer<>(producerConfig.originals(), serializers.getKey(),
-        serializers.getValue());
-    this.producerConfig = producerConfig;
-  }
 
   public ErrorKafkaClient(final ProducerConfig errorProducerConfig) {
     this.producerConfig = errorProducerConfig;

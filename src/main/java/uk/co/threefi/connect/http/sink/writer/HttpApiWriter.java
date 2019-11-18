@@ -38,13 +38,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import uk.co.threefi.connect.http.sink.client.AuthenticatedJavaNetHttpClient;
 import uk.co.threefi.connect.http.sink.client.JavaNetHttpClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
@@ -87,6 +85,7 @@ public class HttpApiWriter {
             } else {
                 batches.get(formattedKeyPattern).add(record);
             }
+
             if (batches.get(formattedKeyPattern).size() >= httpSinkConfig.batchMaxSize) {
                 responseErrors.addAll(sendBatchAndGetResponseErrors(formattedKeyPattern));
             }

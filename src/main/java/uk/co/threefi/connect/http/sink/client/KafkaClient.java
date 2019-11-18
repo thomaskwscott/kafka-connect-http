@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class KafkaClient {
 
-  private static final Logger logger = LoggerFactory.getLogger(KafkaClient.class);
+  private final Logger logger = LoggerFactory.getLogger(KafkaClient.class);
 
   protected KafkaProducer<Object, Object> producer;
 

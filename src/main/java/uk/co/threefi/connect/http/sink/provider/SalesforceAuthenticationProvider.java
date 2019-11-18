@@ -1,17 +1,14 @@
 package uk.co.threefi.connect.http.sink.provider;
 
-import java.io.IOException;
-import java.time.Clock;
-import java.time.Instant;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.co.threefi.connect.http.sink.client.JavaNetHttpClient;
 import uk.co.threefi.connect.http.sink.dto.BearerToken;
 import uk.co.threefi.connect.http.sink.dto.Response;
@@ -26,7 +23,7 @@ public class SalesforceAuthenticationProvider implements AuthenticationProvider 
     private final PayloadGenerator payloadGenerator;
 
     @VisibleForTesting
-    public BearerToken token;
+    BearerToken token;
 
     public SalesforceAuthenticationProvider(final String salesforceAuthRootUrl,
                                             final JavaNetHttpClient httpClient,

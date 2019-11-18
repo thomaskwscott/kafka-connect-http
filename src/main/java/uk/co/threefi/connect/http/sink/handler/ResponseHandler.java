@@ -18,10 +18,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,16 +36,6 @@ public class ResponseHandler {
 
   private final ResponseKafkaClient responseKafkaClient;
   private final ErrorKafkaClient errorKafkaClient;
-
-  public ResponseHandler(HttpSinkConfig httpSinkConfig,
-      ProducerConfig responseProducerConfig,
-      ProducerConfig errorProducerConfig,
-      Pair<Serializer<Object>, Serializer<Object>> responseSerializers,
-      Pair<Serializer<Object>, Serializer<Object>> errorSerializers) {
-    this.httpSinkConfig = httpSinkConfig;
-    responseKafkaClient = new ResponseKafkaClient(responseProducerConfig, responseSerializers);
-    errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
-  }
 
   public ResponseHandler(
       final HttpSinkConfig httpSinkConfig,
@@ -116,8 +103,8 @@ public class ResponseHandler {
     final HttpResponse httpResponse =
         new HttpResponse(response.getStatusCode(), formattedUrl, statusMessage, responseBody);
 
-
-    responseKafkaClient.publishResponse(new ProducerRecord<>(httpSinkConfig.responseTopic, key, httpResponse));
+    responseKafkaClient.publishResponse(
+        new ProducerRecord<>(httpSinkConfig.responseTopic, key, httpResponse));
   }
 
   private Set<ResponseError> retrieveErrors(

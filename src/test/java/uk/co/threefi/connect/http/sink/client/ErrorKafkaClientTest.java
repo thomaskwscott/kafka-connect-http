@@ -7,11 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -30,9 +28,7 @@ public class ErrorKafkaClientTest extends KafkaClientTest {
     ProducerConfig producerConfig =
         getProducerConfig(ByteArraySerializer.class, ByteArraySerializer.class);
 
-    Serializer serializer = new ByteArraySerializer();
-    ErrorKafkaClient responseKafkaClient =
-        new ErrorKafkaClient(producerConfig, Pair.of(serializer, serializer));
+    ErrorKafkaClient responseKafkaClient = new ErrorKafkaClient(producerConfig);
 
     Map<String, String> properties = new HashMap<>();
     properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
