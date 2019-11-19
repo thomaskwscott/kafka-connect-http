@@ -36,7 +36,7 @@ import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RequestMethod;
 import uk.co.threefi.connect.http.sink.dto.Response;
-import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.dto.RetriableError;
 
 public class ResponseHandlerTest {
 
@@ -63,10 +63,10 @@ public class ResponseHandlerTest {
   public void canRetrieveErrorsForUnformattedResponse()
       throws InterruptedException, ExecutionException, TimeoutException {
     Response response = new Response(401, "fail", "ResponseMessage");
-    Set<ResponseError> responseErrors =
+    Set<RetriableError> retriableErrors =
         responseHandler.processResponse(response, inputKey, "someBody", sourceUrl);
-    assertEquals(1, responseErrors.size());
-    ResponseError responseError = (ResponseError) responseErrors.toArray()[0];
+    assertEquals(1, retriableErrors.size());
+    RetriableError responseError = (RetriableError) retriableErrors.toArray()[0];
     assertEquals(response.getBody(), responseError.getErrorMessage());
     assertEquals(inputKey, responseError.getRecordKey());
   }
@@ -75,9 +75,9 @@ public class ResponseHandlerTest {
   public void canReturnNoErrorsForUnformattedResponse()
       throws InterruptedException, ExecutionException, TimeoutException {
     Response response = new Response(200, "pass", "ResponseMessage");
-    Set<ResponseError> responseErrors =
+    Set<RetriableError> retriableErrors =
         responseHandler.processResponse(response, inputKey, "someBody", sourceUrl);
-    assertTrue(responseErrors.isEmpty());
+    assertTrue(retriableErrors.isEmpty());
   }
 
   @Test
@@ -86,10 +86,10 @@ public class ResponseHandlerTest {
     String body =
         "{\"statusCode\":200," + "\"sourceUrl\":\"sourceUrl\"," + "\"statusMessage\":\"OK\"}";
     Response response = new Response(401, "fail", body);
-    Set<ResponseError> responseErrors =
+    Set<RetriableError> retriableErrors =
         responseHandler.processResponse(response, inputKey, "someBody", sourceUrl);
-    assertEquals(1, responseErrors.size());
-    ResponseError responseError = (ResponseError) responseErrors.toArray()[0];
+    assertEquals(1, retriableErrors.size());
+    RetriableError responseError = (RetriableError) retriableErrors.toArray()[0];
     assertEquals(response.getBody(), responseError.getErrorMessage());
     assertEquals(inputKey, responseError.getRecordKey());
   }
@@ -100,9 +100,9 @@ public class ResponseHandlerTest {
     String body =
         "{\"statusCode\":200," + "\"sourceUrl\":\"sourceUrl\"," + "\"statusMessage\":\"OK\"}";
     Response response = new Response(200, "pass", body);
-    Set<ResponseError> responseErrors =
+    Set<RetriableError> retriableErrors =
         responseHandler.processResponse(response, inputKey, "someBody", sourceUrl);
-    assertTrue(responseErrors.isEmpty());
+    assertTrue(retriableErrors.isEmpty());
   }
 
   @Test
@@ -122,11 +122,11 @@ public class ResponseHandlerTest {
     String body = "{\"compositeResponse\":[" + batchBody + " , " + batchBody2 + "] }";
 
     Response response = new Response(200, "fail", body);
-    Set<ResponseError> responseErrors =
+    Set<RetriableError> retriableErrors =
         responseHandler.processResponse(response, inputKey, "someBody", sourceUrl);
-    assertEquals(1, responseErrors.size());
+    assertEquals(1, retriableErrors.size());
 
-    ResponseError responseError = (ResponseError) responseErrors.toArray()[0];
+    RetriableError responseError = (RetriableError) retriableErrors.toArray()[0];
     String batchErrorMessage =
         new JsonParser()
             .parse(batchBody)
@@ -152,9 +152,9 @@ public class ResponseHandlerTest {
     String body = "{\"compositeResponse\":[" + batchBody + " , " + batchBody2 + "] }";
 
     Response response = new Response(200, "pass", body);
-    Set<ResponseError> responseErrors =
+    Set<RetriableError> retriableErrors =
         responseHandler.processResponse(response, inputKey, "someBody", sourceUrl);
-    assertTrue(responseErrors.isEmpty());
+    assertTrue(retriableErrors.isEmpty());
   }
 
   @Test
@@ -163,13 +163,13 @@ public class ResponseHandlerTest {
     String payload1 = "someValue";
     sinkRecords.add(new SinkRecord("someTopic1", 0, null, inputKey, null, payload1, 0));
 
-    Set<ResponseError> responseErrors =
-        Stream.of(new ResponseError(inputKey, "There was an error")).collect(Collectors.toSet());
+    Set<RetriableError> retriableErrors =
+        Stream.of(new RetriableError(inputKey, "There was an error")).collect(Collectors.toSet());
 
     ErrorKafkaClient errorKafkaClient = mock(ErrorKafkaClient.class);
     HttpSinkConfig httpSinkConfig = responseHandler.getHttpSinkConfig();
     ResponseHandler responseHandler = new ResponseHandler(httpSinkConfig, null, errorKafkaClient);
-    responseHandler.handleErrors(sinkRecords, responseErrors);
+    responseHandler.handleErrors(sinkRecords, retriableErrors);
 
     verify(errorKafkaClient).publishError(any(), any());
   }
@@ -202,9 +202,9 @@ public class ResponseHandlerTest {
     List<SinkRecord> sinkRecords = new ArrayList<>();
     String payload1 = "someValue";
     sinkRecords.add(new SinkRecord("someTopic1", 0, null, inputKey, null, payload1, 0));
-    Set<ResponseError> responseErrors =
-        Stream.of(new ResponseError(inputKey, "There was an error")).collect(Collectors.toSet());
-    responseHandler.handleErrors(sinkRecords, responseErrors);
+    Set<RetriableError> retriableErrors =
+        Stream.of(new RetriableError(inputKey, "There was an error")).collect(Collectors.toSet());
+    responseHandler.handleErrors(sinkRecords, retriableErrors);
   }
 
   private Map<String, String> getResponseProducerProperties() {

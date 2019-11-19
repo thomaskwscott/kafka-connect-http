@@ -17,11 +17,11 @@ package uk.co.threefi.connect.http.sink.task;
 
 import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.ERROR_PRODUCER;
 import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RESPONSE_PRODUCER;
+import static uk.co.threefi.connect.http.util.DataUtils.getRetriableRecords;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -32,7 +32,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -40,8 +39,7 @@ import org.slf4j.LoggerFactory;
 import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
 import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
-import uk.co.threefi.connect.http.sink.dto.ResponseError;
-import uk.co.threefi.connect.http.sink.exception.ResponseErrorException;
+import uk.co.threefi.connect.http.sink.dto.RetriableError;
 import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
 import uk.co.threefi.connect.http.sink.writer.HttpApiWriter;
 
@@ -62,7 +60,7 @@ public class HttpSinkTask extends SinkTask {
     httpSinkConfig = new HttpSinkConfig(props);
     remainingRetries = httpSinkConfig.maxRetries;
 
-    responseProducerConfig = obtainProducerConfig(props,RESPONSE_PRODUCER, new HashMap<>());
+    responseProducerConfig = obtainProducerConfig(props, RESPONSE_PRODUCER, new HashMap<>());
     final HashMap<String, String> customProducerProperties = getCustomErrorProducerProperties();
     errorProducerConfig = obtainProducerConfig(props, ERROR_PRODUCER, customProducerProperties);
 
@@ -83,26 +81,41 @@ public class HttpSinkTask extends SinkTask {
 
     log.trace(
         "Received {} records. First record kafka coordinates:({}-{}-{}). Writing them to the "
-        + "API...",
-          records.size(), first.topic(), first.kafkaPartition(), first.kafkaOffset()
-    );
+            + "API...",
+        records.size(),
+        first.topic(),
+        first.kafkaPartition(),
+        first.kafkaOffset());
 
-    Set<ResponseError> responseErrors = new HashSet<>();
+    final Set<RetriableError> retriableErrors = writeRecords(records);
+
     try {
-      responseErrors = writer.write(records);
-      if (!responseErrors.isEmpty()) {
-        throw new ResponseErrorException("Errors found in Http Response");
-      }
-    } catch (Exception exception) {
-      retry(records, exception);
-      responseHandler.handleErrors(records, responseErrors);
+      responseHandler.handleErrors(records, retriableErrors);
+    } catch (Exception e) {
+      log.error("Unable to handle errors in DLQ. Continuing with next batch");
     }
     remainingRetries = httpSinkConfig.maxRetries;
   }
 
+  private Set<RetriableError> writeRecords(final Collection<SinkRecord> records) {
+    Set<RetriableError> retriableErrors = writer.write(records);
+
+    if (!retriableErrors.isEmpty() && remainingRetries > 0) {
+      log.warn(
+          "Write of {} records failed, remainingRetries={}",
+          retriableErrors.size(),
+          remainingRetries);
+      remainingRetries--;
+
+      retriableErrors = writeRecords(getRetriableRecords(records, retriableErrors));
+      context.timeout(httpSinkConfig.retryBackoffMs);
+    }
+    return retriableErrors;
+  }
+
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> map) {
-    //ignored
+    // ignored
   }
 
   public void stop() {
@@ -118,32 +131,12 @@ public class HttpSinkTask extends SinkTask {
     final ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(responseProducerConfig);
     final ErrorKafkaClient errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
 
-    responseHandler = new ResponseHandler(httpSinkConfig, responseKafkaClient,
-          errorKafkaClient);
+    responseHandler = new ResponseHandler(httpSinkConfig, responseKafkaClient, errorKafkaClient);
     writer = new HttpApiWriter(responseHandler);
   }
 
-  private void retry(final Collection<SinkRecord> records, final Exception exception) {
-    log.warn(
-          "Write of {} records failed, remainingRetries={}",
-          records.size(),
-          remainingRetries,
-          exception
-    );
-    if (remainingRetries > 0) {
-      try {
-        init();
-      } catch (Exception ex) {
-        throw new ConnectException(exception);
-      }
-      remainingRetries--;
-      context.timeout(httpSinkConfig.retryBackoffMs);
-      throw new RetriableException(exception);
-    }
-  }
-
   private HashMap<String, String> getCustomErrorProducerProperties() {
-    final HashMap<String,String> customProducerProperties = new HashMap<>();
+    final HashMap<String, String> customProducerProperties = new HashMap<>();
     final String serializerName = ByteArraySerializer.class.getName();
 
     customProducerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, serializerName);
@@ -151,19 +144,22 @@ public class HttpSinkTask extends SinkTask {
     return customProducerProperties;
   }
 
-  private Map<String, String> obtainProducerConfigProps(final Map<String, String> props,
-                                                        final String producerType) {
+  private Map<String, String> obtainProducerConfigProps(
+      final Map<String, String> props, final String producerType) {
     return props.entrySet().stream()
-          .filter(entry -> entry.getKey().startsWith(producerType))
-          .collect(Collectors.toMap(
+        .filter(entry -> entry.getKey().startsWith(producerType))
+        .collect(
+            Collectors.toMap(
                 entry -> entry.getKey().replaceFirst(producerType, StringUtils.EMPTY),
                 Entry::getValue));
   }
 
-  private ProducerConfig obtainProducerConfig(final Map<String, String> props,
-                                              final String producerType,
-                                              final Map<String,String> customProperties) {
-    final Map<String, String> producerConfigProperties = obtainProducerConfigProps(props, producerType);
+  private ProducerConfig obtainProducerConfig(
+      final Map<String, String> props,
+      final String producerType,
+      final Map<String, String> customProperties) {
+    final Map<String, String> producerConfigProperties =
+        obtainProducerConfigProps(props, producerType);
     producerConfigProperties.putAll(customProperties);
     return new ProducerConfig(Collections.unmodifiableMap(producerConfigProperties));
   }

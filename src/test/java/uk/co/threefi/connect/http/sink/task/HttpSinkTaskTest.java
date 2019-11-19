@@ -17,176 +17,158 @@ package uk.co.threefi.connect.http.sink.task;
 
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.expectLastCall;
-import static org.junit.Assert.fail;
 import static uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RESPONSE_PRODUCER;
 
-import java.io.IOException;
+import io.confluent.connect.avro.AvroConverter;
+import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import junit.framework.AssertionFailedError;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.apache.kafka.connect.storage.StringConverter;
 import org.apache.zookeeper.proto.ErrorResponse;
 import org.easymock.EasyMockSupport;
 import org.junit.Test;
-
-import io.confluent.connect.avro.AvroConverter;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
-import junit.framework.AssertionFailedError;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
-import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.dto.RetriableError;
 import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
 import uk.co.threefi.connect.http.sink.writer.HttpApiWriter;
 
 public class HttpSinkTaskTest extends EasyMockSupport {
 
-    @Test
-    public void canProcessWhenNoErrorsFound()
-          throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Set<SinkRecord> records = Collections
-              .singleton(new SinkRecord("stub", 0, null, null, null, "someVal", 0));
-        final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
+  @Test
+  public void canProcessWhenNoErrorsFound() {
+    Set<SinkRecord> records =
+        Collections.singleton(new SinkRecord("stub", 0, null, null, null, "someVal", 0));
+    final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
+    final ResponseHandler mockResponseHandler = createMock(ResponseHandler.class);
 
-        mockWriter.write(records);
-        expectLastCall().andReturn(new HashSet<ErrorResponse>()).times(1);
+    mockWriter.write(records);
+    expectLastCall().andReturn(new HashSet<ErrorResponse>()).times(1);
 
-        HttpSinkTask task = new HttpSinkTask() {
-            @Override
-            protected void init() {
-                this.writer = mockWriter;
-            }
+    mockResponseHandler.handleErrors(anyObject(), anyObject());
+    expectLastCall().times(1);
+
+    HttpSinkTask task =
+        new HttpSinkTask() {
+          @Override
+          protected void init() {
+            this.responseHandler = mockResponseHandler;
+            this.writer = mockWriter;
+          }
         };
 
-        Map<String, String> properties = getProperties(1);
-        task.start(properties);
-        replayAll();
-        try {
-            task.put(records);
-        } catch (RetriableException e) {
-            fail("No exception expected");
-        }
-        verifyAll();
-    }
+    Map<String, String> properties = getProperties(1);
+    task.start(properties);
+    replayAll();
+    task.put(records);
+    verifyAll();
+  }
 
-    @Test
-    public void canIgnoreWhenRecordsAreEmpty()
-          throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        Set<SinkRecord> records = new HashSet<>();
-        final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
+  @Test
+  public void canIgnoreWhenRecordsAreEmpty() {
+    Set<SinkRecord> records = new HashSet<>();
+    final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
 
-        mockWriter.write(records);
-        expectLastCall().andThrow(new AssertionFailedError("Write method should not be called"))
-              .anyTimes();
-        HttpSinkTask task = new HttpSinkTask() {
-            @Override
-            protected void init() {
-                this.writer = mockWriter;
-            }
+    mockWriter.write(records);
+    expectLastCall()
+        .andThrow(new AssertionFailedError("Write method should not be called"))
+        .anyTimes();
+    HttpSinkTask task =
+        new HttpSinkTask() {
+          @Override
+          protected void init() {
+            this.writer = mockWriter;
+          }
         };
-        Map<String, String> properties = getProperties(0);
-        task.start(properties);
-        task.put(records);
-    }
+    Map<String, String> properties = getProperties(0);
+    task.start(properties);
+    task.put(records);
+  }
 
-    @Test(expected = ConnectException.class)
-    public void canThrowConnectionErrorOnInitError() {
-        HttpSinkTask task = new HttpSinkTask() {
-            @Override
-            protected void init() throws Exception {
-                throw new Exception("Exception");
-            }
+  @Test(expected = ConnectException.class)
+  public void canThrowConnectionErrorOnInitError() {
+    HttpSinkTask task =
+        new HttpSinkTask() {
+          @Override
+          protected void init() throws Exception {
+            throw new Exception("Exception");
+          }
         };
-        Map<String, String> properties = getProperties(2);
-        task.start(properties);
-    }
+    Map<String, String> properties = getProperties(2);
+    task.start(properties);
+  }
 
-    @Test
-    public void canRetryAndHandleError()
-          throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        final int maxRetries = 2;
-        final int retryBackoffMs = 1000;
+  @Test
+  public void canRetryAndHandleError() {
+    final int maxRetries = 2;
+    final int retryBackoffMs = 1000;
 
-        Set<SinkRecord> records = Collections
-              .singleton(new SinkRecord("stub", 0, null, null, null, "someVal", 0));
-        final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
-        ResponseHandler responseHandlerMock = createMock(ResponseHandler.class);
-        SinkTaskContext ctx = createMock(SinkTaskContext.class);
+    Set<SinkRecord> records =
+        Collections.singleton(new SinkRecord("stub", 0, null, null, null, "someVal", 0));
+    final HttpApiWriter mockWriter = createMock(HttpApiWriter.class);
+    ResponseHandler responseHandlerMock = createMock(ResponseHandler.class);
+    SinkTaskContext ctx = createMock(SinkTaskContext.class);
 
-        Set<ResponseError> errorResponses =
-              Stream.of(new ResponseError("Key", "ErrorMessage")).collect(
-                    Collectors.toSet());
-        mockWriter.write(records);
-        expectLastCall().andReturn(errorResponses).times(maxRetries + 1);
+    Set<RetriableError> errorResponses =
+        Stream.of(new RetriableError("Key", "ErrorMessage")).collect(Collectors.toSet());
+    mockWriter.write(anyObject());
+    expectLastCall().andReturn(errorResponses).times(maxRetries + 1);
 
-        ctx.timeout(retryBackoffMs);
-        expectLastCall().times(maxRetries);
+    ctx.timeout(retryBackoffMs);
+    expectLastCall().times(maxRetries);
 
-        responseHandlerMock.handleErrors(anyObject(),anyObject());
-        expectLastCall().times(1);
+    responseHandlerMock.handleErrors(anyObject(), anyObject());
+    expectLastCall().times(1);
 
-        HttpSinkTask task = new HttpSinkTask() {
-            @Override
-            protected void init() {
-                this.writer = mockWriter;
-                this.responseHandler = responseHandlerMock;
-            }
+    HttpSinkTask task =
+        new HttpSinkTask() {
+          @Override
+          protected void init() {
+            this.writer = mockWriter;
+            this.responseHandler = responseHandlerMock;
+          }
         };
-        task.initialize(ctx);
+    task.initialize(ctx);
 
-        Map<String, String> properties = getProperties(maxRetries);
-        task.start(properties);
+    Map<String, String> properties = getProperties(maxRetries);
+    task.start(properties);
 
-        replayAll();
+    replayAll();
 
-        try {
-            task.put(records);
-            fail();
-        } catch (RetriableException expected) {
-        }
-        try {
-            task.put(records);
-            fail();
-        } catch (RetriableException expected) {
-        }
-        try {
-            task.put(records);
-        } catch (Exception e) {
-            fail("No exception is expected in the last retry");
-        }
-        verifyAll();
-    }
+    task.put(records);
 
-    private Map<String, String> getProperties(int maxRetries) {
-        Map<String, String> properties = new HashMap<>();
-        properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
-        properties.put(HttpSinkConfig.MAX_RETRIES, String.valueOf(maxRetries));
-        properties.put(HttpSinkConfig.RETRY_BACKOFF_MS, String.valueOf(1000));
-        properties.put(HttpSinkConfig.KEY_CONVERTER, StringConverter.class.getName());
-        properties.put(HttpSinkConfig.VALUE_CONVERTER, AvroConverter.class.getName());
-        properties.put(HttpSinkConfig.VALUE_CONVERTER_SR_URL, "http://localhost:8081");
+    verifyAll();
+  }
 
-        properties.put(RESPONSE_PRODUCER + ProducerConfig.RETRIES_CONFIG, "1");
-        properties.put(RESPONSE_PRODUCER + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-              "http://localhost:9092");
-        properties.put(RESPONSE_PRODUCER + ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-              StringSerializer.class.getName());
-        properties
-              .put(RESPONSE_PRODUCER + ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                    KafkaAvroSerializer.class.getName());
-        properties.put(RESPONSE_PRODUCER + "schema.registry.url", "http://localhost:8081");
-        return properties;
-    }
+  private Map<String, String> getProperties(int maxRetries) {
+    Map<String, String> properties = new HashMap<>();
+    properties.put(HttpSinkConfig.HTTP_API_URL, "stub");
+    properties.put(HttpSinkConfig.MAX_RETRIES, String.valueOf(maxRetries));
+    properties.put(HttpSinkConfig.RETRY_BACKOFF_MS, String.valueOf(1000));
+    properties.put(HttpSinkConfig.KEY_CONVERTER, StringConverter.class.getName());
+    properties.put(HttpSinkConfig.VALUE_CONVERTER, AvroConverter.class.getName());
+    properties.put(HttpSinkConfig.VALUE_CONVERTER_SR_URL, "http://localhost:8081");
 
+    properties.put(RESPONSE_PRODUCER + ProducerConfig.RETRIES_CONFIG, "1");
+    properties.put(
+        RESPONSE_PRODUCER + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://localhost:9092");
+    properties.put(
+        RESPONSE_PRODUCER + ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+        StringSerializer.class.getName());
+    properties.put(
+        RESPONSE_PRODUCER + ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+        KafkaAvroSerializer.class.getName());
+    properties.put(RESPONSE_PRODUCER + "schema.registry.url", "http://localhost:8081");
+    return properties;
+  }
 }

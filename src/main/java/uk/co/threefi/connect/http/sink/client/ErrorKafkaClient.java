@@ -14,7 +14,7 @@ import org.apache.kafka.connect.storage.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
-import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.dto.RetriableError;
 
 public class ErrorKafkaClient extends KafkaClient {
 
@@ -26,16 +26,16 @@ public class ErrorKafkaClient extends KafkaClient {
     producer = new KafkaProducer<>(errorProducerConfig.originals());
   }
 
-  public void publishError(final HttpSinkConfig httpSinkConfig, final ResponseError responseError)
+  public void publishError(final HttpSinkConfig httpSinkConfig, final RetriableError retriableError)
       throws ExecutionException, InterruptedException, TimeoutException {
 
     final ProducerRecord<Object, Object> producerRecord =
         obtainSerializedProducerRecord(
-            httpSinkConfig, responseError.getSinkRecord(), httpSinkConfig.errorTopic);
+            httpSinkConfig, retriableError.getSinkRecord(), httpSinkConfig.errorTopic);
 
     producerRecord
         .headers()
-        .add(new RecordHeader("errorMessage", responseError.getErrorMessage().getBytes()));
+        .add(new RecordHeader("errorMessage", retriableError.getErrorMessage().getBytes()));
 
     publishRecord(producerRecord);
   }

@@ -22,7 +22,7 @@
 
     <groupId>uk.co.threefi</groupId>
     <artifactId>kafka-connect-http-with-auth</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.7</version>
     <packaging>jar</packaging>
     <name>kafka-connect-http-with-auth</name>
     <organization>

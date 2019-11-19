@@ -16,7 +16,7 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.storage.StringConverter;
 import org.junit.Test;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
-import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.dto.RetriableError;
 
 public class ErrorKafkaClientTest extends KafkaClientTest {
 
@@ -39,8 +39,8 @@ public class ErrorKafkaClientTest extends KafkaClientTest {
 
     HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
     SinkRecord sinkRecord = new SinkRecord(errorTopic, 0, null, "someKey", null, "someValue", 0);
-    ResponseError responseError = new ResponseError(sinkRecord, "Error occurred");
-    responseKafkaClient.publishError(httpSinkConfig, responseError);
+    RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
+    responseKafkaClient.publishError(httpSinkConfig, retriableError);
 
     assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics()).hasSize(1);
     assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics().get(0).name()).isEqualTo(errorTopic);
@@ -67,7 +67,7 @@ public class ErrorKafkaClientTest extends KafkaClientTest {
 
     HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
     SinkRecord sinkRecord = new SinkRecord("topic", 0, null, "someKey", null, "someValue", 0);
-    ResponseError responseError = new ResponseError(sinkRecord, "Error occurred");
-    errorKafkaClient.publishError(httpSinkConfig, responseError);
+    RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
+    errorKafkaClient.publishError(httpSinkConfig, retriableError);
   }
 }

@@ -27,7 +27,7 @@ import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
 import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.dto.Response;
-import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.dto.RetriableError;
 
 public class ResponseHandler {
 
@@ -46,7 +46,7 @@ public class ResponseHandler {
     this.errorKafkaClient = errorKafkaClient;
   }
 
-  public Set<ResponseError> processResponse(
+  public Set<RetriableError> processResponse(
       final Response response, final String key, String body, final String formattedUrl)
       throws InterruptedException, ExecutionException, TimeoutException {
 
@@ -57,12 +57,12 @@ public class ResponseHandler {
   }
 
   public void handleErrors(
-      final Collection<SinkRecord> records, final Set<ResponseError> responseErrors) {
+      final Collection<SinkRecord> records, final Set<RetriableError> responseErrors) {
     records.stream()
         .filter(
             record ->
                 responseErrors.stream()
-                    .map(ResponseError::getRecordKey)
+                    .map(RetriableError::getRecordKey)
                     .anyMatch(key -> StringUtils.equals(getKey(record), key)))
         .map(record -> getResponseErrorForRecord(record, responseErrors))
         .forEach(this::publishError);
@@ -72,20 +72,20 @@ public class ResponseHandler {
     return httpSinkConfig;
   }
 
-  private ResponseError getResponseErrorForRecord(
-      final SinkRecord record, final Set<ResponseError> responseErrors) {
+  private RetriableError getResponseErrorForRecord(
+      final SinkRecord record, final Set<RetriableError> responseErrors) {
     final String recordKey = getKey(record);
     final Optional<String> errorMessage =
         responseErrors.stream()
-            .filter(responseError -> StringUtils.equals(responseError.getRecordKey(), recordKey))
-            .map(ResponseError::getErrorMessage)
+            .filter(retriableError -> StringUtils.equals(retriableError.getRecordKey(), recordKey))
+            .map(RetriableError::getErrorMessage)
             .findAny();
-    return new ResponseError(record, errorMessage.orElse(StringUtils.EMPTY));
+    return new RetriableError(record, errorMessage.orElse(StringUtils.EMPTY));
   }
 
-  private void publishError(ResponseError responseError) {
+  private void publishError(final RetriableError retriableError) {
     try {
-      errorKafkaClient.publishError(httpSinkConfig, responseError);
+      errorKafkaClient.publishError(httpSinkConfig, retriableError);
     } catch (Exception e) {
       logger.error("Something failed while publishing error");
       throw new RuntimeException(e);
@@ -107,14 +107,14 @@ public class ResponseHandler {
         new ProducerRecord<>(httpSinkConfig.responseTopic, key, httpResponse));
   }
 
-  private Set<ResponseError> retrieveErrors(
+  private Set<RetriableError> retrieveErrors(
       final Response response, final String key, final String formattedUrl, final String body) {
-    final Set<ResponseError> responseErrors =
+    final Set<RetriableError> retriableErrors =
         isValidJson(response.getBody())
             ? processJsonResponse(response, key)
             : processUnformattedResponse(response, key);
 
-    if (!responseErrors.isEmpty()) {
+    if (!retriableErrors.isEmpty()) {
       logger.info("Response error handler found at least one error and will retry");
       logger.info(
           String.format(
@@ -126,60 +126,61 @@ public class ResponseHandler {
               formattedUrl));
     }
     logger.info("Response errors have been processed");
-    return responseErrors;
+    return retriableErrors;
   }
 
-  private Set<ResponseError> processUnformattedResponse(final Response response, final String key) {
+  private Set<RetriableError> processUnformattedResponse(
+      final Response response, final String key) {
     if (!isResponseSuccessful(response)) {
       logger.debug("Found Unformatted Response");
       final String responseBody =
           response.getBody() == null ? StringUtils.EMPTY : response.getBody();
-      return Stream.of(new ResponseError(key, responseBody)).collect(Collectors.toSet());
+      return Stream.of(new RetriableError(key, responseBody)).collect(Collectors.toSet());
     }
     return new HashSet<>();
   }
 
-  private Set<ResponseError> processJsonResponse(final Response response, final String key) {
+  private Set<RetriableError> processJsonResponse(final Response response, final String key) {
     logger.debug("Found Json Response : {}", response.getBody());
 
     final JsonElement jsonTree = new JsonParser().parse(response.getBody());
     final JsonElement responseBody =
         Optional.ofNullable(jsonTree.getAsJsonObject().get(httpSinkConfig.responseBody))
             .orElse(jsonTree);
-    final Set<ResponseError> responseErrors = new HashSet<>();
+    final Set<RetriableError> retriableErrors = new HashSet<>();
 
     if (isBatchResponse(responseBody)) {
       final JsonArray batchResponse = responseBody.getAsJsonArray();
-      batchResponse.forEach(element -> processBatchResponseElement(element, responseErrors));
+      batchResponse.forEach(element -> processBatchResponseElement(element, retriableErrors));
     } else {
       final JsonObject jsonResponse = responseBody.getAsJsonObject();
       if (!isResponseSuccessful(response)) {
         final String bodyString =
             jsonResponse.isJsonNull() ? StringUtils.EMPTY : jsonResponse.toString();
-        responseErrors.add(new ResponseError(key, bodyString));
+        retriableErrors.add(new RetriableError(key, bodyString));
       }
     }
-    return responseErrors;
+    return retriableErrors;
   }
 
   private void processBatchResponseElement(
-      final JsonElement element, final Set<ResponseError> responseErrors) {
+      final JsonElement element, final Set<RetriableError> retriableErrors) {
     final JsonObject response = element.getAsJsonObject();
 
     final int statusCode = response.get(httpSinkConfig.errorBatchResponseStatusCode).getAsInt();
     if (!isResponseSuccessful(statusCode)) {
-      addErrorToResponseErrors(response, responseErrors);
+      addErrorToResponseErrors(response, retriableErrors);
     }
   }
 
   private void addErrorToResponseErrors(
-      final JsonObject response, final Set<ResponseError> responseErrors) {
+      final JsonObject response, final Set<RetriableError> retriableErrors) {
     final String batchResponseKey =
         StringUtils.trim(response.get(httpSinkConfig.errorBatchResponseKey).getAsString());
     final String body =
         response.get(httpSinkConfig.errorBatchResponseBody).isJsonNull()
             ? StringUtils.EMPTY
             : response.get(httpSinkConfig.errorBatchResponseBody).toString();
-    responseErrors.add(new ResponseError(batchResponseKey, body));
+    retriableErrors.add(new RetriableError(batchResponseKey, body));
   }
 }

@@ -48,7 +48,7 @@ import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
 import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RequestMethod;
-import uk.co.threefi.connect.http.sink.dto.ResponseError;
+import uk.co.threefi.connect.http.sink.dto.RetriableError;
 import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
 
 public class HttpApiWriterTest {
@@ -146,9 +146,9 @@ public class HttpApiWriterTest {
         HttpSinkConfig.HTTP_API_URL, "http://localhost:" + restHelper.getPort() + "/unauthorized");
     HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
     List<SinkRecord> sinkRecords = createSinkRecords(1);
-    Set<ResponseError> responseErrors = writer.write(sinkRecords);
-    assertThat(responseErrors).hasSize(1);
-    assertThat(((ResponseError) responseErrors.toArray()[0]).getErrorMessage())
+    Set<RetriableError> retriableErrors = writer.write(sinkRecords);
+    assertThat(retriableErrors).hasSize(1);
+    assertThat(((RetriableError) retriableErrors.toArray()[0]).getErrorMessage())
         .isEqualTo("{\"status\":\"unauthorized\"}");
   }
 
@@ -160,7 +160,6 @@ public class HttpApiWriterTest {
     responseProducerProperties.put(HttpSinkConfig.RESPONSE_TOPIC, responseTopic);
     responseProducerProperties.put(
         ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaTestHelper.getKafkaConnectString());
-
     Map<String, String> errorProducerProperties = getErrorProducerProperties();
     HttpApiWriter writer = getHttpApiWriter(responseProducerProperties, errorProducerProperties);
 

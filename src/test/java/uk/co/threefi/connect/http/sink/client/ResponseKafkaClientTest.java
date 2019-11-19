@@ -64,10 +64,10 @@ public class ResponseKafkaClientTest extends KafkaClientTest {
     final String key = "123468";
     HttpResponse httpResponse = new HttpResponse(201, "http://testURL", "No Content", "Body");
 
-    ProducerConfig producerConfig =
+    final ProducerConfig producerConfig =
         getProducerConfig(StringSerializer.class, MockKafkaAvroSerializer.class);
 
-    ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(producerConfig);
+    final ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(producerConfig);
 
     for (KafkaBroker kafkaBroker : kafkaTestHelper.getKafkaBrokers()) {
       kafkaBroker.stop();
