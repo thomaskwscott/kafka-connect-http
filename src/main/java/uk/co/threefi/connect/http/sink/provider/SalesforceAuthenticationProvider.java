@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.provider;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -9,6 +9,10 @@ import java.time.Clock;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.threefi.connect.http.sink.client.JavaNetHttpClient;
+import uk.co.threefi.connect.http.sink.dto.BearerToken;
+import uk.co.threefi.connect.http.sink.dto.Response;
+import uk.co.threefi.connect.http.sink.generator.PayloadGenerator;
 
 public class SalesforceAuthenticationProvider implements AuthenticationProvider {
     private static final Logger log =
@@ -50,9 +54,9 @@ public class SalesforceAuthenticationProvider implements AuthenticationProvider 
     }
 
     private BearerToken requestToken() throws IOException {
-        Instant requestedExpiry = Instant.now(clock).plusSeconds(180);
+        final Instant requestedExpiry = Instant.now(clock).plusSeconds(180);
 
-        Response response = httpClient.makeRequest(
+        final Response response = httpClient.makeRequest(
                 "POST",
                 String.format("%s/services/oauth2/token", salesforceAuthRootUrl),
                 ImmutableMap.of("Content-Type", "application/x-www-form-urlencoded"),
@@ -61,9 +65,12 @@ public class SalesforceAuthenticationProvider implements AuthenticationProvider 
             throw new IOException(String.format("Request to %s/services/oauth2/token returned %s.",
                     salesforceAuthRootUrl, response));
         }
+
         log.info("Successful login to SF API.");
         log.debug("Login response: {}", response);
-        JsonObject jsonBody = new JsonParser().parse(response.getBody()).getAsJsonObject();
+
+        final JsonObject jsonBody = new JsonParser().parse(response.getBody()).getAsJsonObject();
+
         return new BearerToken(jsonBody.get("access_token").getAsString(),
                 requestedExpiry.minusSeconds(5));
     }

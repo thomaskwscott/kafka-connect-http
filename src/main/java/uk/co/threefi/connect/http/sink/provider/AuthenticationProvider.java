@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.provider;
 
 import java.io.IOException;
 

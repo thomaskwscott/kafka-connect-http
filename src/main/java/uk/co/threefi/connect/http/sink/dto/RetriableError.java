@@ -1,4 +1,4 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.dto;
 
 import org.apache.kafka.connect.sink.SinkRecord;
 
@@ -8,12 +8,12 @@ public class RetriableError {
     private String errorMessage;
     private SinkRecord sinkRecord;
 
-    public RetriableError(SinkRecord sinkRecord, String errorMessage) {
+    public RetriableError(final SinkRecord sinkRecord, final String errorMessage) {
         this.sinkRecord = sinkRecord;
         this.errorMessage = errorMessage;
     }
 
-    public RetriableError(String recordKey, String errorMessage) {
+    public RetriableError(final String recordKey, final String errorMessage) {
         this.recordKey = recordKey;
         this.errorMessage = errorMessage;
     }

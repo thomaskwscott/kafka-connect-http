@@ -44,8 +44,8 @@ import java.util.TimeZone;
  */
 public class SimpleJsonConverter {
 
-    public static final SimpleDateFormat ISO_DATE_FORMAT= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    public static final SimpleDateFormat TIME_FORMAT= new SimpleDateFormat("HH:mm:ss.SSSZ");
+    private static final SimpleDateFormat ISO_DATE_FORMAT= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    private static final SimpleDateFormat TIME_FORMAT= new SimpleDateFormat("HH:mm:ss.SSSZ");
     static{
         ISO_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));;
     }
@@ -54,40 +54,28 @@ public class SimpleJsonConverter {
     private static final HashMap<String, LogicalTypeConverter> TO_CONNECT_LOGICAL_CONVERTERS = new HashMap<>();
 
     static {
-        TO_CONNECT_LOGICAL_CONVERTERS.put(Decimal.LOGICAL_NAME, new LogicalTypeConverter() {
-            @Override
-            public Object convert(Schema schema, Object value) {
-                if (!(value instanceof byte[]))
-                    throw new DataException("Invalid type for Decimal, underlying representation should be bytes but was " + value.getClass());
-                return Decimal.toLogical(schema, (byte[]) value);
-            }
+        TO_CONNECT_LOGICAL_CONVERTERS.put(Decimal.LOGICAL_NAME, (schema, value) -> {
+            if (!(value instanceof byte[]))
+                throw new DataException("Invalid type for Decimal, underlying representation should be bytes but was " + value.getClass());
+            return Decimal.toLogical(schema, (byte[]) value);
         });
 
-        TO_CONNECT_LOGICAL_CONVERTERS.put(Date.LOGICAL_NAME, new LogicalTypeConverter() {
-            @Override
-            public Object convert(Schema schema, Object value) {
-                if (!(value instanceof Integer))
-                    throw new DataException("Invalid type for Date, underlying representation should be int32 but was " + value.getClass());
-                return Date.toLogical(schema, (int) value);
-            }
+        TO_CONNECT_LOGICAL_CONVERTERS.put(Date.LOGICAL_NAME, (schema, value) -> {
+            if (!(value instanceof Integer))
+                throw new DataException("Invalid type for Date, underlying representation should be int32 but was " + value.getClass());
+            return Date.toLogical(schema, (int) value);
         });
 
-        TO_CONNECT_LOGICAL_CONVERTERS.put(Time.LOGICAL_NAME, new LogicalTypeConverter() {
-            @Override
-            public Object convert(Schema schema, Object value) {
-                if (!(value instanceof Integer))
-                    throw new DataException("Invalid type for Time, underlying representation should be int32 but was " + value.getClass());
-                return Time.toLogical(schema, (int) value);
-            }
+        TO_CONNECT_LOGICAL_CONVERTERS.put(Time.LOGICAL_NAME, (schema, value) -> {
+            if (!(value instanceof Integer))
+                throw new DataException("Invalid type for Time, underlying representation should be int32 but was " + value.getClass());
+            return Time.toLogical(schema, (int) value);
         });
 
-        TO_CONNECT_LOGICAL_CONVERTERS.put(Timestamp.LOGICAL_NAME, new LogicalTypeConverter() {
-            @Override
-            public Object convert(Schema schema, Object value) {
-                if (!(value instanceof Long))
-                    throw new DataException("Invalid type for Timestamp, underlying representation should be int64 but was " + value.getClass());
-                return Timestamp.toLogical(schema, (long) value);
-            }
+        TO_CONNECT_LOGICAL_CONVERTERS.put(Timestamp.LOGICAL_NAME, (schema, value) -> {
+            if (!(value instanceof Long))
+                throw new DataException("Invalid type for Timestamp, underlying representation should be int64 but was " + value.getClass());
+            return Timestamp.toLogical(schema, (long) value);
         });
     }
 
@@ -224,11 +212,6 @@ public class SimpleJsonConverter {
         } catch (ClassCastException e) {
             throw new DataException("Invalid type for " + schema.type() + ": " + value.getClass());
         }
-    }
-
-
-    private interface JsonToConnectTypeConverter {
-        Object convert(Schema schema, JsonNode value);
     }
 
     private interface LogicalTypeConverter {

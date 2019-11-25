@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.config;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
@@ -109,7 +110,7 @@ public class HttpSinkConfig extends AbstractConfig {
             + "this will be applied once at the end of the batch of records.";
     private static final String BATCH_SUFFIX_DISPLAY = "Batch suffix";
 
-    public static final String BATCH_SEPARATOR = "batch.separator";
+    private static final String BATCH_SEPARATOR = "batch.separator";
     private static final String BATCH_SEPARATOR_DEFAULT = ",";
     private static final String BATCH_SEPARATOR_DOC = "Separator for records in a batch.";
     private static final String BATCH_SEPARATOR_DISPLAY = "Batch separator";
@@ -130,7 +131,7 @@ public class HttpSinkConfig extends AbstractConfig {
             "we want to filter out from the body of each sub-request";
     private static final String BATCH_BODY_FIELD_FILTER_DISPLAY = "Batch body field filter list";
 
-    public static final String CONNECTION_GROUP = "Connection";
+    private static final String CONNECTION_GROUP = "Connection";
     private static final String RETRIES_GROUP = "Retries";
     private static final String REGEX_GROUP = "Regex";
     private static final String BATCHING_GROUP = "Batching";
@@ -142,12 +143,12 @@ public class HttpSinkConfig extends AbstractConfig {
     private static final String SALESFORCE_AUTHENTICATION_ROOT_DOC = "The Root URL for the Salesforce Authentication server, without a trailing slash.";
     private static final String SALESFORCE_AUTHENTICATION_ROOT_DISPLAY = "Salesforce Authentication Server Root URL path";
 
-    public static final String SALESFORCE_AUTHENTICATION_CLIENT_ID = "salesforce.authentication.client_id";
+    private static final String SALESFORCE_AUTHENTICATION_CLIENT_ID = "salesforce.authentication.client_id";
     private static final String SALESFORCE_AUTHENTICATION_CLIENT_ID_DEFAULT = "";
     private static final String SALESFORCE_AUTHENTICATION_CLIENT_ID_DOC = "OAuth client_id for the connected app for which the certificate was registered";
     private static final String SALESFORCE_AUTHENTICATION_CLIENT_ID_DISPLAY = "Salesforce Authentication client_id";
 
-    public static final String SALESFORCE_AUTHENTICATION_USERNAME = "salesforce.authentication.username";
+    private static final String SALESFORCE_AUTHENTICATION_USERNAME = "salesforce.authentication.username";
     private static final String SALESFORCE_AUTHENTICATION_USERNAME_DEFAULT = "";
     private static final String SALESFORCE_AUTHENTICATION_USERNAME_DOC = "The username of the Salesforce user.";
     private static final String SALESFORCE_AUTHENTICATION_USERNAME_DISPLAY = "Salesforce Authentication username";
@@ -573,9 +574,7 @@ public class HttpSinkConfig extends AbstractConfig {
     public final String salesforceAuthenticationClientId;
     public final String salesforceAuthenticationUsername;
     public final String salesforceAuthenticationPrivateKey;
-    public static String keyConverterClassName;
-    public static String valueConverterClassName;
-    public static String valueConverterSchemaRegistryUrl;
+
 
     public HttpSinkConfig(Map<?, ?> props) {
         super(CONFIG_DEF, props);
@@ -606,9 +605,6 @@ public class HttpSinkConfig extends AbstractConfig {
         salesforceAuthenticationClientId = getString(SALESFORCE_AUTHENTICATION_CLIENT_ID);
         salesforceAuthenticationUsername = getString(SALESFORCE_AUTHENTICATION_USERNAME);
         salesforceAuthenticationPrivateKey = getString(SALESFORCE_AUTHENTICATION_PRIVATE_KEY);
-        keyConverterClassName = getString(KEY_CONVERTER);
-        valueConverterClassName = getString(VALUE_CONVERTER);
-        valueConverterSchemaRegistryUrl = getString(VALUE_CONVERTER_SR_URL);
     }
 
 
@@ -643,9 +639,5 @@ public class HttpSinkConfig extends AbstractConfig {
         public String toString() {
             return canonicalValues.toString();
         }
-    }
-
-    public static void main(String... args) {
-        System.out.println(CONFIG_DEF.toEnrichedRst());
     }
 }

@@ -16,6 +16,10 @@
 
 package uk.co.threefi.connect.http;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.common.config.Config;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
@@ -23,12 +27,8 @@ import org.apache.kafka.connect.sink.SinkConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import uk.co.threefi.connect.http.sink.HttpSinkConfig;
-import uk.co.threefi.connect.http.sink.HttpSinkTask;
+import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
+import uk.co.threefi.connect.http.sink.task.HttpSinkTask;
 import uk.co.threefi.connect.http.util.Version;
 
 public final class HttpSinkConnector extends SinkConnector {
@@ -41,7 +41,7 @@ public final class HttpSinkConnector extends SinkConnector {
   }
 
   @Override
-  public List<Map<String, String>> taskConfigs(int maxTasks) {
+  public List<Map<String, String>> taskConfigs(final int maxTasks) {
     log.info("Setting task configurations for {} workers.", maxTasks);
     final List<Map<String, String>> configs = new ArrayList<>(maxTasks);
     for (int i = 0; i < maxTasks; ++i) {
@@ -51,7 +51,7 @@ public final class HttpSinkConnector extends SinkConnector {
   }
 
   @Override
-  public void start(Map<String, String> props) {
+  public void start(final Map<String, String> props) {
     configProps = props;
   }
 
@@ -65,7 +65,7 @@ public final class HttpSinkConnector extends SinkConnector {
   }
 
   @Override
-  public Config validate(Map<String, String> connectorConfigs) {
+  public Config validate(final Map<String, String> connectorConfigs) {
     // TODO cross-fields validation here: pkFields against the pkMode
     return super.validate(connectorConfigs);
   }

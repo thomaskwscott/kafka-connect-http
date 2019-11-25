@@ -1,8 +1,13 @@
-package uk.co.threefi.connect.http.sink;
+package uk.co.threefi.connect.http.sink.client;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.when;
+import static uk.co.threefi.connect.http.sink.RequestInfoAssert.assertThat;
+
 import java.io.IOException;
+
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,10 +16,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static uk.co.threefi.connect.http.sink.RequestInfoAssert.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+
+import uk.co.threefi.connect.http.sink.RequestInfoAssert;
+import uk.co.threefi.connect.http.sink.RestHelper;
+import uk.co.threefi.connect.http.sink.provider.AuthenticationProvider;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AuthenticatedJavaNetHttpClientTest {
@@ -52,7 +59,7 @@ public class AuthenticatedJavaNetHttpClientTest {
                         "Accept", "application/json",
                         "Content-Type", "application/json"
                 )), PAYLOAD);
-        assertThat(restHelper.getCapturedRequests(), RequestInfoAssert.class)
+        Assertions.assertThat(restHelper.getCapturedRequests(), RequestInfoAssert.class)
                 .hasSize(1)
                 .first()
                 .hasMethod(POST)
