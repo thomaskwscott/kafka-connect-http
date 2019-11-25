@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.threefi.connect.http.HttpResponse;
 import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
-import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
+import uk.co.threefi.connect.http.sink.client.KafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RequestMethod;
 import uk.co.threefi.connect.http.sink.dto.Response;
@@ -53,7 +53,7 @@ public class ResponseHandlerTest {
     final ProducerConfig errorProducerConfig =
         new ProducerConfig(Collections.unmodifiableMap(getErrorProducerProperties()));
 
-    final ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(responseProducerConfig);
+    final KafkaClient responseKafkaClient = new KafkaClient(responseProducerConfig);
     final ErrorKafkaClient errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
 
     responseHandler = new ResponseHandler(httpSinkConfig, responseKafkaClient, errorKafkaClient);
@@ -171,7 +171,7 @@ public class ResponseHandlerTest {
     ResponseHandler responseHandler = new ResponseHandler(httpSinkConfig, null, errorKafkaClient);
     responseHandler.handleErrors(sinkRecords, retriableErrors);
 
-    verify(errorKafkaClient).publishError(any(), any());
+    verify(errorKafkaClient).publish(any(), any());
   }
 
   @Test
@@ -183,7 +183,7 @@ public class ResponseHandlerTest {
     properties.put(HttpSinkConfig.RESPONSE_TOPIC, "response.topic");
     HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
 
-    ResponseKafkaClient responseKafkaClient = mock(ResponseKafkaClient.class);
+    KafkaClient responseKafkaClient = mock(KafkaClient.class);
 
     ResponseHandler responseHandler =
         new ResponseHandler(httpSinkConfig, responseKafkaClient, null);
@@ -193,8 +193,7 @@ public class ResponseHandlerTest {
         new HttpResponse(
             response.getStatusCode(), sourceUrl, response.getStatusMessage(), response.getBody());
     verify(responseKafkaClient)
-        .publishResponse(
-            new ProducerRecord<>(httpSinkConfig.responseTopic, inputKey, httpResponse));
+        .publishRecord(new ProducerRecord<>(httpSinkConfig.responseTopic, inputKey, httpResponse));
   }
 
   @Test(expected = RuntimeException.class)

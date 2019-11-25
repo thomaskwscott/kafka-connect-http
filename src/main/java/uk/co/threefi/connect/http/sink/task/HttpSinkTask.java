@@ -37,7 +37,7 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
-import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
+import uk.co.threefi.connect.http.sink.client.KafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.dto.RetriableError;
 import uk.co.threefi.connect.http.sink.handler.ResponseHandler;
@@ -128,7 +128,7 @@ public class HttpSinkTask extends SinkTask {
   }
 
   protected void init() throws Exception {
-    final ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(responseProducerConfig);
+    final KafkaClient responseKafkaClient = new KafkaClient(responseProducerConfig);
     final ErrorKafkaClient errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
 
     responseHandler = new ResponseHandler(httpSinkConfig, responseKafkaClient, errorKafkaClient);

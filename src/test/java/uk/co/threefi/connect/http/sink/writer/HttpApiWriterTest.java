@@ -45,7 +45,7 @@ import uk.co.threefi.connect.http.sink.MockKafkaAvroSerializer;
 import uk.co.threefi.connect.http.sink.RequestInfo;
 import uk.co.threefi.connect.http.sink.RestHelper;
 import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
-import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
+import uk.co.threefi.connect.http.sink.client.KafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig.RequestMethod;
 import uk.co.threefi.connect.http.sink.dto.RetriableError;
@@ -824,7 +824,7 @@ public class HttpApiWriterTest {
     ProducerConfig errorProducerConfig =
         new ProducerConfig(Collections.unmodifiableMap(errorProducerProperties));
 
-    final ResponseKafkaClient responseKafkaClient = new ResponseKafkaClient(responseProducerConfig);
+    final KafkaClient responseKafkaClient = new KafkaClient(responseProducerConfig);
     final ErrorKafkaClient errorKafkaClient = new ErrorKafkaClient(errorProducerConfig);
 
     ResponseHandler responseHandler =

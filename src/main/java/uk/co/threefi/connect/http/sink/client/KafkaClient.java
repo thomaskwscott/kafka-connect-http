@@ -5,18 +5,26 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class KafkaClient {
+public class KafkaClient {
 
   private final Logger logger = LoggerFactory.getLogger(KafkaClient.class);
 
   protected KafkaProducer<Object, Object> producer;
 
-  protected void publishRecord(final ProducerRecord<Object, Object> producerRecord)
+  public KafkaClient() {
+  }
+
+  public KafkaClient(final ProducerConfig responseProducerConfig) {
+    producer = new KafkaProducer<>(responseProducerConfig.originals());
+  }
+
+  public void publishRecord(final ProducerRecord<Object, Object> producerRecord)
       throws InterruptedException, ExecutionException, TimeoutException {
 
     final Object key = getMessageItem(producerRecord.key());

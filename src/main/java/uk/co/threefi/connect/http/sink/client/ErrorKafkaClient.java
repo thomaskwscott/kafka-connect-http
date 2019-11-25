@@ -26,7 +26,7 @@ public class ErrorKafkaClient extends KafkaClient {
     producer = new KafkaProducer<>(errorProducerConfig.originals());
   }
 
-  public void publishError(final HttpSinkConfig httpSinkConfig, final RetriableError retriableError)
+  public void publish(final HttpSinkConfig httpSinkConfig, final RetriableError retriableError)
       throws ExecutionException, InterruptedException, TimeoutException {
 
     final ProducerRecord<Object, Object> producerRecord =

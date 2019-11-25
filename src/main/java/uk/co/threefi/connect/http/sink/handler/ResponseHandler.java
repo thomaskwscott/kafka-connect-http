@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.threefi.connect.http.HttpResponse;
 import uk.co.threefi.connect.http.sink.client.ErrorKafkaClient;
-import uk.co.threefi.connect.http.sink.client.ResponseKafkaClient;
+import uk.co.threefi.connect.http.sink.client.KafkaClient;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.dto.Response;
 import uk.co.threefi.connect.http.sink.dto.RetriableError;
@@ -34,12 +34,12 @@ public class ResponseHandler {
   private static final Logger logger = LoggerFactory.getLogger(ResponseHandler.class);
   private final HttpSinkConfig httpSinkConfig;
 
-  private final ResponseKafkaClient responseKafkaClient;
+  private final KafkaClient responseKafkaClient;
   private final ErrorKafkaClient errorKafkaClient;
 
   public ResponseHandler(
       final HttpSinkConfig httpSinkConfig,
-      final ResponseKafkaClient responseKafkaClient,
+      final KafkaClient responseKafkaClient,
       final ErrorKafkaClient errorKafkaClient) {
     this.httpSinkConfig = httpSinkConfig;
     this.responseKafkaClient = responseKafkaClient;
@@ -85,7 +85,7 @@ public class ResponseHandler {
 
   private void publishError(final RetriableError retriableError) {
     try {
-      errorKafkaClient.publishError(httpSinkConfig, retriableError);
+      errorKafkaClient.publish(httpSinkConfig, retriableError);
     } catch (Exception e) {
       logger.error("Something failed while publishing error");
       throw new RuntimeException(e);
@@ -103,7 +103,7 @@ public class ResponseHandler {
     final HttpResponse httpResponse =
         new HttpResponse(response.getStatusCode(), formattedUrl, statusMessage, responseBody);
 
-    responseKafkaClient.publishResponse(
+    responseKafkaClient.publishRecord(
         new ProducerRecord<>(httpSinkConfig.responseTopic, key, httpResponse));
   }
 

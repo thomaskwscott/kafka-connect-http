@@ -18,7 +18,7 @@ import org.junit.Test;
 import uk.co.threefi.connect.http.sink.config.HttpSinkConfig;
 import uk.co.threefi.connect.http.sink.dto.RetriableError;
 
-public class ErrorKafkaClientTest extends KafkaClientTest {
+public class ErrorKafkaClientTest extends AbstractKafkaClientTest {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -40,7 +40,7 @@ public class ErrorKafkaClientTest extends KafkaClientTest {
     HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
     SinkRecord sinkRecord = new SinkRecord(errorTopic, 0, null, "someKey", null, "someValue", 0);
     RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
-    responseKafkaClient.publishError(httpSinkConfig, retriableError);
+    responseKafkaClient.publish(httpSinkConfig, retriableError);
 
     assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics()).hasSize(1);
     assertThat(kafkaTestHelper.getKafkaTestUtils().getTopics().get(0).name()).isEqualTo(errorTopic);
@@ -68,6 +68,6 @@ public class ErrorKafkaClientTest extends KafkaClientTest {
     HttpSinkConfig httpSinkConfig = new HttpSinkConfig(properties);
     SinkRecord sinkRecord = new SinkRecord("topic", 0, null, "someKey", null, "someValue", 0);
     RetriableError retriableError = new RetriableError(sinkRecord, "Error occurred");
-    errorKafkaClient.publishError(httpSinkConfig, retriableError);
+    errorKafkaClient.publish(httpSinkConfig, retriableError);
   }
 }
