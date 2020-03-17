@@ -27,6 +27,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
 
+import javax.ws.rs.core.Response;
+
 
 public class HttpApiWriter {
 
@@ -118,7 +120,7 @@ public class HttpApiWriter {
 
         // get response
         int status = con.getResponseCode();
-        if (status != 200) {
+        if (Response.Status.Family.familyOf(status) != Response.Status.Family.SUCCESSFUL) {
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(con.getErrorStream()));
             String inputLine;
