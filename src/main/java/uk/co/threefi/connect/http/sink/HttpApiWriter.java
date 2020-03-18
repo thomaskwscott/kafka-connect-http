@@ -76,6 +76,32 @@ public class HttpApiWriter {
         List<SinkRecord> records = batches.get(formattedKeyPattern);
         SinkRecord record0 = records.get(0);
 
+        StringBuilder builder = new StringBuilder(config.batchPrefix);
+        int batchIndex=0;
+        for(SinkRecord record : records) {
+            if (record == null) {
+                continue;
+            }
+
+            if (record.value() == null) {
+                continue;
+            }
+
+            String recordValue = buildRecord(record);
+
+            builder.append(recordValue);
+            batchIndex++;
+            if (batchIndex < records.size()) {
+                builder.append(config.batchSeparator);
+            }
+        }
+        builder.append(config.batchSuffix);
+
+        // if we dont't have anything to send, skip
+        if (builder.length() == 0) {
+            log.debug("nothing to send; skipping the http request");
+            return;
+        }
 
         // build url - ${key} and ${topic} can be replaced with message values
         // the first record in the batch is used to build the url as we assume it will be consistent across all records.
@@ -88,25 +114,12 @@ public class HttpApiWriter {
         con.setDoOutput(true);
         con.setRequestMethod(requestMethod.toString());
 
-
         // add headers
         for (String headerKeyValue : config.headers.split(config.headerSeparator)) {
             if (headerKeyValue.contains(":")) {
                 con.setRequestProperty(headerKeyValue.split(":")[0], headerKeyValue.split(":")[1]);
             }
         }
-
-        StringBuilder builder = new StringBuilder(config.batchPrefix);
-        int batchIndex=0;
-        for(SinkRecord record : records) {
-            String recordValue = buildRecord(record);
-            builder.append(recordValue);
-            batchIndex++;
-            if (batchIndex < records.size()) {
-                builder.append(config.batchSeparator);
-            }
-        }
-        builder.append(config.batchSuffix);
 
         OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream(), "UTF-8");
         writer.write(builder.toString());
@@ -145,7 +158,7 @@ public class HttpApiWriter {
         StringBuffer content = new StringBuffer();
         while ((inputLine = in.readLine()) != null) {
             content.append(inputLine);
-        }
+        }        
         in.close();
         con.disconnect();
     }
