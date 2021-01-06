@@ -43,13 +43,13 @@
     </licenses>
 
     <properties>
-        <confluent.version>5.4.1</confluent.version>
+        <confluent.version>6.0.1</confluent.version>
         <commons-io.version>2.6</commons-io.version>
         <junit.version>4.13</junit.version>
         <java.version>8</java.version>
         <maven-compiler-plugin.version>3.6.1</maven-compiler-plugin.version>
         <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
-        <kafka.version>5.3.1-ce</kafka.version>
+        <kafka.version>6.0.1-ce</kafka.version>
         <licenses.name>Apache License 2.0</licenses.name>
         <licenses.version>5.4.1</licenses.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
